@@ -3773,14 +3773,23 @@ const liberalPolicies = [
       // ===========================================
       // 1. POPULAR SPENDING PROGRAMS
       // These give moderate Dems political cover to vote yes
-      // +10 each, max +30
+      // Base +8 each, scaled by intensity (higher spending = more to show voters)
+      // Max +30 total
       // ===========================================
-      const popularIds = ['child-allowance', 'parental-leave', 'childcare', 'ivf-coverage'];
-      const popularCount = Math.min(3, enabledPolicies.filter(p => popularIds.includes(p.id)).length);
-      if (popularCount > 0) {
-        const bonus = popularCount * 10;
-        score += bonus;
-        factors.push({ label: `${popularCount} popular program${popularCount > 1 ? 's' : ''} (+10 ea)`, impact: +bonus, class: 'positive' });
+      const popularIds = ['child-allowance', 'parental-leave', 'childcare', 'fertility-coverage'];
+      const popularPolicies = enabledPolicies.filter(p => popularIds.includes(p.id));
+      let popularBonus = 0;
+      popularPolicies.forEach(p => {
+        // Base 8 points, scaled by intensity (50-200% range → 0.5x to 1.5x multiplier)
+        const intensityMultiplier = 0.5 + (p.intensity / 200);
+        const thisBonus = Math.round(8 * intensityMultiplier);
+        popularBonus += thisBonus;
+      });
+      popularBonus = Math.min(30, popularBonus); // Cap at +30
+      if (popularBonus > 0) {
+        score += popularBonus;
+        const intensityNote = popularPolicies.some(p => p.intensity !== 100) ? ' (intensity-scaled)' : '';
+        factors.push({ label: `${popularPolicies.length} popular program${popularPolicies.length > 1 ? 's' : ''}${intensityNote}`, impact: +popularBonus, class: 'positive' });
       }
       
       // ===========================================
@@ -3812,14 +3821,35 @@ const liberalPolicies = [
       // ===========================================
       // 3. ENTITLEMENT CUTS
       // Dems can't vote to cut SS/Medicare without cover
-      // -10 each, extra -10 if no popular spending to offset
+      // Base -8 each, scaled by intensity (more extreme = more political pain)
+      // Extra -10 if no popular spending to offset
       // ===========================================
       if (enabledEntitlements.length > 0) {
-        let entitlementPenalty = enabledEntitlements.length * 10;
-        factors.push({ label: `${enabledEntitlements.length} entitlement cut${enabledEntitlements.length > 1 ? 's' : ''} (-10 ea)`, impact: -(enabledEntitlements.length * 10), class: 'negative' });
+        let entitlementPenalty = 0;
+        
+        enabledEntitlements.forEach(r => {
+          // Calculate how extreme the reform is (0 = minimum, 1 = maximum)
+          const config = r.sliderConfig;
+          const range = config.max - config.min;
+          const intensity = range > 0 ? (r.threshold - config.min) / range : 0.5;
+          
+          // Base -8, scaled by intensity (mild = 0.5x, extreme = 1.5x)
+          const multiplier = 0.5 + intensity;
+          const thisPenalty = Math.round(8 * multiplier);
+          entitlementPenalty += thisPenalty;
+        });
+        
+        const avgIntensity = enabledEntitlements.reduce((sum, r) => {
+          const config = r.sliderConfig;
+          const range = config.max - config.min;
+          return sum + (range > 0 ? (r.threshold - config.min) / range : 0.5);
+        }, 0) / enabledEntitlements.length;
+        
+        const intensityNote = avgIntensity > 0.6 ? ' (aggressive)' : avgIntensity < 0.4 ? ' (modest)' : '';
+        factors.push({ label: `${enabledEntitlements.length} entitlement cut${enabledEntitlements.length > 1 ? 's' : ''}${intensityNote}`, impact: -entitlementPenalty, class: 'negative' });
         
         // Extra penalty if cutting entitlements without popular spending to show for it
-        if (popularCount === 0) {
+        if (popularPolicies.length === 0) {
           entitlementPenalty += 10;
           factors.push({ label: 'Cuts without popular spending', impact: -10, class: 'negative' });
         }
@@ -3953,7 +3983,7 @@ const liberalPolicies = [
       // ===========================================
       
       // "Grand Bargain" - entitlements + popular spending + fully funded
-      if (enabledEntitlements.length > 0 && popularCount >= 2 && netDeficit <= 0) {
+      if (enabledEntitlements.length > 0 && popularPolicies.length >= 2 && netDeficit <= 0) {
         score += 12;
         factors.push({ label: 'Grand bargain package', impact: +12, class: 'positive' });
       }
