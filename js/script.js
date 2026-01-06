@@ -4747,6 +4747,30 @@ const liberalPolicies = [
     function clearState() {
       localStorage.removeItem(STORAGE_KEY);
     }
+    
+    function resetSimulator() {
+      // Clear saved state
+      clearState();
+      
+      // Clear URL parameters (in case shared state was loaded)
+      const url = new URL(window.location);
+      url.searchParams.delete('s');
+      window.history.replaceState({}, '', url);
+      
+      // Reload page to reset everything
+      window.location.reload();
+    }
+    
+    function initResetButton() {
+      const resetBtn = document.getElementById('reset-simulator');
+      if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+          if (confirm('Reset all selections? This will clear your policy package.')) {
+            resetSimulator();
+          }
+        });
+      }
+    }
 
     function init() {
       // Check for shared state in URL first (before loading saved state)
@@ -4767,6 +4791,7 @@ const liberalPolicies = [
       initDeficitModal();
       initShareModal();
       initSharedPreviewModal();
+      initResetButton();
       updateDisplay();
       
       // If we loaded state, save again to ensure consistency
