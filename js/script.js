@@ -724,10 +724,10 @@ const liberalPolicies = [
         name: 'Current System',
         desc: 'Mix of family, employment, diversity, and refugee admissions',
         controls: [
-          { id: 'family', label: 'Family-Based', min: 20, max: 85, unit: '%', desc: 'Immediate relatives + family preference' },
-          { id: 'employment', label: 'Employment-Based', min: 5, max: 60, unit: '%', desc: 'EB-1 through EB-5 visas' },
-          { id: 'diversity', label: 'Diversity Lottery', min: 0, max: 20, unit: '%', desc: 'Random selection from underrepresented countries' },
-          { id: 'refugee', label: 'Refugee/Asylum', min: 0, max: 40, unit: '%', desc: 'Humanitarian admissions' }
+          { id: 'family', label: 'Family-Based', min: 0, max: 100, unit: '%', desc: 'Immediate relatives + family preference' },
+          { id: 'employment', label: 'Employment-Based', min: 0, max: 100, unit: '%', desc: 'EB-1 through EB-5 visas' },
+          { id: 'diversity', label: 'Diversity Lottery', min: 0, max: 100, unit: '%', desc: 'Random selection from underrepresented countries' },
+          { id: 'refugee', label: 'Refugee/Asylum', min: 0, max: 100, unit: '%', desc: 'Humanitarian admissions' }
         ]
       },
       {
@@ -3261,36 +3261,27 @@ const liberalPolicies = [
             const oldOtherTotal = otherKeys.reduce((sum, k) => sum + params[k], 0);
             const targetOtherTotal = 100 - newValue;
             
+            // Set this slider's value
+            params[ctrl.id] = Math.max(0, Math.min(100, newValue));
+            
             if (oldOtherTotal > 0 && targetOtherTotal >= 0) {
               // Scale other sliders proportionally
               const scale = targetOtherTotal / oldOtherTotal;
               otherKeys.forEach(k => {
-                const ctrlDef = mech.controls.find(c => c.id === k);
-                let newVal = Math.round(params[k] * scale);
-                newVal = Math.max(ctrlDef.min, Math.min(ctrlDef.max, newVal));
-                params[k] = newVal;
+                params[k] = Math.max(0, Math.round(params[k] * scale));
               });
               
-              // Adjust for rounding errors while respecting min/max
-              const actualTotal = newValue + otherKeys.reduce((sum, k) => sum + params[k], 0);
+              // Fix rounding to ensure exactly 100%
+              const actualTotal = shareKeys.reduce((sum, k) => sum + params[k], 0);
               if (actualTotal !== 100) {
-                const diff = 100 - actualTotal;
-                // Find a slider that can absorb the difference
-                const sortedKeys = [...otherKeys].sort((a, b) => params[b] - params[a]);
-                for (const k of sortedKeys) {
-                  const ctrlDef = mech.controls.find(c => c.id === k);
-                  const newVal = params[k] + diff;
-                  if (newVal >= ctrlDef.min && newVal <= ctrlDef.max) {
-                    params[k] = newVal;
-                    break;
-                  }
-                }
+                // Adjust the largest "other" slider
+                const largest = otherKeys.reduce((a, b) => params[a] > params[b] ? a : b);
+                params[largest] = Math.max(0, params[largest] + (100 - actualTotal));
               }
+            } else if (targetOtherTotal >= 0) {
+              // All others are 0, just set one to the remainder
+              params[otherKeys[0]] = targetOtherTotal;
             }
-            
-            // Clamp the changed slider to its bounds
-            const currentCtrlDef = mech.controls.find(c => c.id === ctrl.id);
-            params[ctrl.id] = Math.max(currentCtrlDef.min, Math.min(currentCtrlDef.max, newValue));
             
             // Update all slider displays
             mech.controls.forEach(c => {
