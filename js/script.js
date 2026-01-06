@@ -3773,24 +3773,37 @@ const liberalPolicies = [
       // ===========================================
       // 1. POPULAR SPENDING PROGRAMS
       // These give moderate Dems political cover to vote yes
-      // Base +8 each, scaled by intensity (higher spending = more to show voters)
+      // Base +8 each, scaled by intensity AND voting bloc size
+      // Larger blocs = more political capital gained
       // Max +30 total
       // ===========================================
+
+      // Voting bloc weights for popular policies
+      // Parents of young children: ~10% of electorate, moderate turnout → 0.8x
+      // Fertility patients: ~2% of population, small but sympathetic → 0.5x
+      const votingBlocPopular = {
+        'child-allowance': { weight: 0.8, bloc: 'parents' },
+        'parental-leave': { weight: 0.8, bloc: 'parents' },
+        'childcare': { weight: 0.8, bloc: 'parents' },
+        'fertility-coverage': { weight: 0.5, bloc: 'infertility patients' }
+      };
+
       const popularIds = ['child-allowance', 'parental-leave', 'childcare', 'fertility-coverage'];
       const popularPolicies = enabledPolicies.filter(p => popularIds.includes(p.id));
       let popularBonus = 0;
       popularPolicies.forEach(p => {
-        // Base 8 points, scaled by intensity (50-200% range → 0.5x to 1.5x multiplier)
+        // Base 8 points, scaled by intensity AND voting bloc weight
         const intensity = p.intensity !== undefined ? p.intensity : 100;
         const intensityMultiplier = 0.5 + (intensity / 200);
-        const thisBonus = Math.round(8 * intensityMultiplier);
+        const blocWeight = votingBlocPopular[p.id]?.weight || 1.0;
+        const thisBonus = Math.round(8 * intensityMultiplier * blocWeight);
         popularBonus += thisBonus;
       });
       popularBonus = Math.min(30, popularBonus); // Cap at +30
       if (popularBonus > 0) {
         score += popularBonus;
-        const intensityNote = popularPolicies.some(p => p.intensity !== 100) ? ' (intensity-scaled)' : '';
-        factors.push({ label: `${popularPolicies.length} popular program${popularPolicies.length > 1 ? 's' : ''}${intensityNote}`, impact: +popularBonus, class: 'positive' });
+        const intensityNote = popularPolicies.some(p => p.intensity !== 100) ? ', intensity-scaled' : '';
+        factors.push({ label: `${popularPolicies.length} popular program${popularPolicies.length > 1 ? 's' : ''} (bloc-weighted${intensityNote})`, impact: +popularBonus, class: 'positive' });
       }
       
       // ===========================================
@@ -3822,41 +3835,68 @@ const liberalPolicies = [
       // ===========================================
       // 3. ENTITLEMENT CUTS
       // Dems can't vote to cut SS/Medicare without cover
-      // Base -8 each, scaled by intensity (more extreme = more political pain)
+      // Base -8 each, scaled by intensity AND voting bloc size
+      // Larger blocs (retirees) = more political pain
       // Extra -10 if no popular spending to offset
       // ===========================================
+
+      // Voting bloc weights for entitlement reforms
+      // Retirees: ~17% of electorate, ~70% turnout (highest) → higher weight
+      // Near-retirees (55-64): ~15% of electorate, very engaged → high weight
+      // Workers planning retirement: ~30% of electorate → highest weight
+      // Medicare drugs is actually POPULAR with voters (pharma is the opponent) → low weight
+      const votingBlocEntitlements = {
+        'medicare-age': { weight: 1.4, bloc: 'near-retirees' },      // Affects 55-64 age group
+        'ss-means-test': { weight: 0.9, bloc: 'high-income retirees' }, // Only wealthy affected
+        'ss-cola': { weight: 1.3, bloc: 'all retirees' },            // Affects everyone on SS
+        'medicare-drugs': { weight: 0.3, bloc: 'pharma lobby' },     // Actually popular with voters!
+        'ss-retirement-70': { weight: 1.5, bloc: 'workers' },        // Huge bloc planning retirement
+        'ss-cap': { weight: 0.9, bloc: 'high earners' },             // Only high earners affected
+        'medicare-premiums': { weight: 1.0, bloc: 'higher-income retirees' }
+      };
+
       if (enabledEntitlements.length > 0) {
         let entitlementPenalty = 0;
-        
+        let heaviestBloc = null;
+        let maxWeight = 0;
+
         enabledEntitlements.forEach(r => {
           // Calculate how extreme the reform is (0 = minimum, 1 = maximum)
           const config = r.sliderConfig;
           const currentValue = r.threshold !== undefined ? r.threshold : config.default;
           const range = config.max - config.min;
           const intensity = range > 0 ? (currentValue - config.min) / range : 0.5;
-          
-          // Base -8, scaled by intensity (mild = 0.5x, extreme = 1.5x)
-          const multiplier = 0.5 + intensity;
-          const thisPenalty = Math.round(8 * multiplier);
+
+          // Base -8, scaled by intensity AND voting bloc weight
+          const intensityMultiplier = 0.5 + intensity;
+          const blocInfo = votingBlocEntitlements[r.id] || { weight: 1.0, bloc: 'general' };
+          const thisPenalty = Math.round(8 * intensityMultiplier * blocInfo.weight);
           entitlementPenalty += thisPenalty;
+
+          // Track heaviest bloc for labeling
+          if (blocInfo.weight > maxWeight) {
+            maxWeight = blocInfo.weight;
+            heaviestBloc = blocInfo.bloc;
+          }
         });
-        
+
         const avgIntensity = enabledEntitlements.reduce((sum, r) => {
           const config = r.sliderConfig;
           const currentValue = r.threshold !== undefined ? r.threshold : config.default;
           const range = config.max - config.min;
           return sum + (range > 0 ? (currentValue - config.min) / range : 0.5);
         }, 0) / enabledEntitlements.length;
-        
-        const intensityNote = avgIntensity > 0.6 ? ' (aggressive)' : avgIntensity < 0.4 ? ' (modest)' : '';
-        factors.push({ label: `${enabledEntitlements.length} entitlement cut${enabledEntitlements.length > 1 ? 's' : ''}${intensityNote}`, impact: -entitlementPenalty, class: 'negative' });
-        
+
+        const intensityNote = avgIntensity > 0.6 ? ', aggressive' : avgIntensity < 0.4 ? ', modest' : '';
+        const blocNote = heaviestBloc ? ` (${heaviestBloc}${intensityNote})` : intensityNote ? ` (${intensityNote.slice(2)})` : '';
+        factors.push({ label: `${enabledEntitlements.length} entitlement cut${enabledEntitlements.length > 1 ? 's' : ''}${blocNote}`, impact: -entitlementPenalty, class: 'negative' });
+
         // Extra penalty if cutting entitlements without popular spending to show for it
         if (popularPolicies.length === 0) {
           entitlementPenalty += 10;
           factors.push({ label: 'Cuts without popular spending', impact: -10, class: 'negative' });
         }
-        
+
         score -= entitlementPenalty;
       }
       
