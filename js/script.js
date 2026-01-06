@@ -1753,6 +1753,9 @@ const liberalPolicies = [
       
       // Update effective impact on each policy card
       updateEffectiveImpacts(tfr, fiscal);
+      
+      // Save state to localStorage
+      saveState();
     }
 
     function updateEffectiveImpacts(tfr, fiscal) {
@@ -3243,6 +3246,9 @@ const liberalPolicies = [
     function initImmigration() {
       const levelSlider = document.getElementById('immigration-level-slider');
       if (levelSlider) {
+        // Set slider to current value (may have been loaded from state)
+        levelSlider.value = immigrationConfig.annualLevel;
+        
         levelSlider.addEventListener('input', () => {
           immigrationConfig.annualLevel = parseInt(levelSlider.value);
           updateCompositionBar();
@@ -3796,7 +3802,106 @@ const liberalPolicies = [
       });
     }
 
+    // === STATE PERSISTENCE ===
+    const STORAGE_KEY = 'tfrsim_state_v1';
+    
+    function saveState() {
+      const state = {
+        liberalPolicies: liberalPolicies.map(p => ({ id: p.id, enabled: p.enabled, intensity: p.intensity })),
+        illiberalPolicies: illiberalPolicies.map(p => ({ id: p.id, enabled: p.enabled })),
+        entitlementReforms: entitlementReforms.map(r => ({ id: r.id, enabled: r.enabled, threshold: r.threshold })),
+        taxIncreases: taxIncreases.map(t => ({ id: t.id, enabled: t.enabled, threshold: t.threshold })),
+        immigrationConfig: {
+          annualLevel: immigrationConfig.annualLevel,
+          selectionMechanism: immigrationConfig.selectionMechanism,
+          params: immigrationConfig.params
+        },
+        modelParams: { ...modelParams }
+      };
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (e) {
+        console.warn('Failed to save state:', e);
+      }
+    }
+    
+    function loadState() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (!saved) return false;
+        
+        const state = JSON.parse(saved);
+        
+        // Restore liberal policies
+        if (state.liberalPolicies) {
+          state.liberalPolicies.forEach(saved => {
+            const policy = liberalPolicies.find(p => p.id === saved.id);
+            if (policy) {
+              policy.enabled = saved.enabled;
+              if (saved.intensity !== undefined) policy.intensity = saved.intensity;
+            }
+          });
+        }
+        
+        // Restore illiberal policies
+        if (state.illiberalPolicies) {
+          state.illiberalPolicies.forEach(saved => {
+            const policy = illiberalPolicies.find(p => p.id === saved.id);
+            if (policy) policy.enabled = saved.enabled;
+          });
+        }
+        
+        // Restore entitlement reforms
+        if (state.entitlementReforms) {
+          state.entitlementReforms.forEach(saved => {
+            const reform = entitlementReforms.find(r => r.id === saved.id);
+            if (reform) {
+              reform.enabled = saved.enabled;
+              if (saved.threshold !== undefined) reform.threshold = saved.threshold;
+            }
+          });
+        }
+        
+        // Restore tax increases
+        if (state.taxIncreases) {
+          state.taxIncreases.forEach(saved => {
+            const tax = taxIncreases.find(t => t.id === saved.id);
+            if (tax) {
+              tax.enabled = saved.enabled;
+              if (saved.threshold !== undefined) tax.threshold = saved.threshold;
+            }
+          });
+        }
+        
+        // Restore immigration config
+        if (state.immigrationConfig) {
+          immigrationConfig.annualLevel = state.immigrationConfig.annualLevel ?? 1000;
+          immigrationConfig.selectionMechanism = state.immigrationConfig.selectionMechanism ?? 'current';
+          if (state.immigrationConfig.params) {
+            Object.assign(immigrationConfig.params, state.immigrationConfig.params);
+          }
+        }
+        
+        // Restore model params
+        if (state.modelParams) {
+          Object.assign(modelParams, state.modelParams);
+        }
+        
+        return true;
+      } catch (e) {
+        console.warn('Failed to load state:', e);
+        return false;
+      }
+    }
+    
+    function clearState() {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+
     function init() {
+      // Load saved state before rendering
+      const hasState = loadState();
+      
       initSplash();
       liberalPolicies.forEach(p => renderPolicyCard(p, document.getElementById('liberal-policies')));
       illiberalPolicies.forEach(p => renderPolicyCard(p, document.getElementById('illiberal-policies'), true));
@@ -3809,6 +3914,9 @@ const liberalPolicies = [
       initDeficitModal();
       initShareModal();
       updateDisplay();
+      
+      // If we loaded state, save again to ensure consistency
+      if (hasState) saveState();
     }
 
     init();
