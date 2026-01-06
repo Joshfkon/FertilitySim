@@ -1329,18 +1329,21 @@ const liberalPolicies = [
       const savedLevel = immigrationConfig.annualLevel;
       const savedMech = immigrationConfig.selectionMechanism;
       const savedCurrentParams = { ...immigrationConfig.params.current };
+      console.log('calculateFiscal - SAVED params:', JSON.stringify(savedCurrentParams));
       
       // Set to baseline: 1M/yr with current system at default params
       // IMPORTANT: Modify in place to preserve object reference for event handlers
       immigrationConfig.annualLevel = 1000;
       immigrationConfig.selectionMechanism = 'current';
       Object.assign(immigrationConfig.params.current, { family: 66, employment: 15, diversity: 5, refugee: 14 });
+      console.log('calculateFiscal - BASELINE params:', JSON.stringify(immigrationConfig.params.current));
       const baselineImpacts = calculateImmigrationImpacts();
       
       // Restore current settings (modify in place)
       immigrationConfig.annualLevel = savedLevel;
       immigrationConfig.selectionMechanism = savedMech;
       Object.assign(immigrationConfig.params.current, savedCurrentParams);
+      console.log('calculateFiscal - RESTORED params:', JSON.stringify(immigrationConfig.params.current));
       const currentImpacts = calculateImmigrationImpacts();
       
       // Calculate per-immigrant fiscal for both (including gen2)
@@ -2957,6 +2960,8 @@ const liberalPolicies = [
       const mech = immigrationConfig.selectionMechanism;
       const params = immigrationConfig.params[mech];
       
+      console.log('calculateImmigrationImpacts - mech:', mech, 'params:', JSON.stringify(params));
+      
       // Get derived source composition
       const effectiveWeights = deriveSourceComposition();
       
@@ -3253,6 +3258,11 @@ const liberalPolicies = [
         const valueEl = document.getElementById(`value-${ctrl.id}`);
         
         slider.addEventListener('input', () => {
+          console.log('=== SLIDER INPUT EVENT ===');
+          console.log('Slider:', ctrl.id, 'Value:', slider.value);
+          console.log('params === immigrationConfig.params.current?', params === immigrationConfig.params.current);
+          console.log('Before update - immigrationConfig.params.current:', JSON.stringify(immigrationConfig.params.current));
+          
           const newValue = ctrl.step === 0.1 ? parseFloat(slider.value) : parseInt(slider.value);
           
           // For current system, maintain 100% total
@@ -3305,9 +3315,15 @@ const liberalPolicies = [
             valueEl.textContent = ctrl.format ? ctrl.format(newValue) : `${newValue}${ctrl.unit}`;
           }
           
+          console.log('After update - immigrationConfig.params.current:', JSON.stringify(immigrationConfig.params.current));
+          console.log('After update - params:', JSON.stringify(params));
+          
           updateCompositionBar();
           updateImmigrationDisplay();
           updateDisplay();
+          
+          console.log('After updateDisplay - immigrationConfig.params.current:', JSON.stringify(immigrationConfig.params.current));
+          console.log('=== END SLIDER EVENT ===');
         });
       });
     }
