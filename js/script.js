@@ -1029,34 +1029,43 @@ const liberalPolicies = [
       const inf = inflationDynamics;
       
       // ========================================
-      // FIX #2: USE ABSOLUTE CPI LEVEL IN CRISIS
+      // BLENDED PENALTY BASIS (no cliff at regime boundary)
       // ========================================
       // Normal/Elevated: Penalty on policy-induced inflation only
       //   (baseline CPI already reflected in TFR 1.62)
       // Stressed/Dominance: Penalty on ABSOLUTE CPI level
       //   (entire inflation environment becomes destabilizing)
       //
-      // Rationale: When you're at 8% CPI, fertility suffers from 8% inflation,
-      // not from "8% minus whatever baseline was." The lived experience is absolute.
+      // FIX: Blend over 7-9% deficit/GDP band to avoid step function
+      
+      const policyBasis = inf.policyInducedInflation;
+      const absoluteBasis = Math.max(0, inf.totalCPI - 2.0); // Absolute CPI minus healthy 2%
       
       let inflationForPenalty;
-      let usingAbsoluteCPI = false;
+      let blendFactor = 0; // 0 = pure policy basis, 1 = pure absolute basis
       
-      if (inf.fiscalRegime === 'normal' || inf.fiscalRegime === 'elevated') {
-        // Standard case: penalty on new inflation only
-        inflationForPenalty = inf.policyInducedInflation;
+      if (inf.fiscalRegime === 'normal') {
+        // Below 6%: pure policy-induced
+        blendFactor = 0;
+      } else if (inf.fiscalRegime === 'elevated') {
+        // 6-8%: start blending (0 at 6%, ~0.5 at 8%)
+        const progress = (inf.deficitPctGDP - 6) / 2;
+        blendFactor = progress * 0.5; // Reaches 0.5 at regime boundary
+      } else if (inf.fiscalRegime === 'stressed') {
+        // 8-10%: continue blending (0.5 at 8%, 1.0 at 10%)
+        const progress = (inf.deficitPctGDP - 8) / 2;
+        blendFactor = 0.5 + progress * 0.5;
       } else {
-        // CRISIS REGIME: Use absolute CPI level
-        // People experience the full CPI, not a delta from some baseline
-        usingAbsoluteCPI = true;
-        inflationForPenalty = inf.totalCPI;
-        
-        // But we don't penalize for "normal" 2% inflation
-        // Penalty kicks in above 2% (healthy inflation level)
-        inflationForPenalty = Math.max(0, inf.totalCPI - 2.0);
+        // Dominance (>10%): pure absolute CPI basis
+        blendFactor = 1.0;
       }
       
-      if (inflationForPenalty <= 0) return { penalty: 0, details: inf, inflationForPenalty: 0, usingAbsoluteCPI };
+      // Linear interpolation between the two bases
+      inflationForPenalty = policyBasis * (1 - blendFactor) + absoluteBasis * blendFactor;
+      
+      const usingAbsoluteCPI = blendFactor > 0.5; // For display purposes
+      
+      if (inflationForPenalty <= 0) return { penalty: 0, details: inf, inflationForPenalty: 0, usingAbsoluteCPI, blendFactor };
       
       // ========================================
       // FIX #3: STEEPER TFR ELASTICITIES
@@ -1127,6 +1136,7 @@ const liberalPolicies = [
         inflationForPenalty: inflationForPenalty,
         tfrDeclinePct: tfrDeclinePct,
         usingAbsoluteCPI: usingAbsoluteCPI,
+        blendFactor: blendFactor,
         uncertaintyAmp: uncertaintyAmp,
         uncertaintyApplied: uncertaintyAmp > 1.0,
         details: inf
