@@ -178,6 +178,13 @@
     </div>
 
     <div class="penalties">
+      <!-- Inflation Rate Indicator -->
+      <div class="inflation-rate-badge" id="inflation-rate-container">
+        <span class="inflation-rate-icon">📈</span>
+        <span>CPI: <span id="inflation-rate-val">2.5%</span></span>
+        <span class="inflation-rate-status" id="inflation-rate-status"></span>
+      </div>
+      
       <div class="penalty-badge-container" id="inflation-container">
         <div class="penalty-badge inflation" id="penalty-inflation">
           <span>⚠</span>
@@ -351,6 +358,38 @@
           <p class="modal-assumption"><strong>Recommendation:</strong> Consider adding offsets (entitlement reform or taxes) to bring net deficit impact below $500B, or accept significantly reduced fertility gains from your package.</p>
         </div>
         <button class="modal-close-btn" id="close-fiscal-crisis-modal">I understand the tradeoff</button>
+      </div>
+    </div>
+
+    <!-- GDP Crash Warning Modal -->
+    <div class="modal-overlay" id="gdp-crash-modal">
+      <div class="modal-content" style="border-left: 4px solid #e65100;">
+        <div class="modal-header" style="background: #fff3e0;">
+          <span class="modal-icon">📉</span>
+          <h3 style="color: #e65100;">Economy Under Severe Stress</h3>
+        </div>
+        <div class="modal-body">
+          <p><strong>Your policy package is causing significant economic damage.</strong></p>
+          
+          <p>GDP 2075 is projected to decline substantially from baseline due to:</p>
+          
+          <ul style="margin: 12px 0; padding-left: 20px; font-size: 13px;">
+            <li><strong>High tax burden</strong> — reducing investment and labor supply</li>
+            <li><strong>Inflation drag</strong> — elevated CPI is eroding growth</li>
+            <li><strong>Fiscal crowding out</strong> — high deficits competing for capital</li>
+          </ul>
+          
+          <div style="background: #fff3e0; padding: 12px; margin: 12px 0; font-size: 12px;">
+            <strong>GDP Impact:</strong> <span id="gdp-crash-detail">-10% from baseline</span><br>
+            <strong>Projected CPI:</strong> <span id="gdp-crash-cpi">5.0%</span>
+          </div>
+          
+          <p style="font-size: 12px; margin-top: 12px;">
+            While your fertility policies may still boost TFR, the economic damage could offset some benefits. 
+            Consider reducing taxes with severe GDP drag, or offsetting with growth-positive policies.
+          </p>
+        </div>
+        <button class="modal-close-btn" id="close-gdp-crash-modal">I understand</button>
       </div>
     </div>
 

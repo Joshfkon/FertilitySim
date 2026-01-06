@@ -966,6 +966,55 @@
       opacity: 1;
     }
 
+    /* Inflation Rate Badge */
+    .inflation-rate-badge {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: var(--paper-dark);
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      margin-right: 8px;
+    }
+
+    .inflation-rate-badge.visible {
+      display: flex;
+    }
+
+    .inflation-rate-badge.elevated {
+      background: #fff3e0;
+      color: #e65100;
+    }
+
+    .inflation-rate-badge.high {
+      background: #ffebee;
+      color: #c62828;
+    }
+
+    .inflation-rate-badge.crisis {
+      background: #c62828;
+      color: white;
+      animation: pulse-warning 1s ease-in-out infinite;
+    }
+
+    @keyframes pulse-warning {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    .inflation-rate-icon {
+      font-size: 14px;
+    }
+
+    .inflation-rate-status {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      opacity: 0.8;
+    }
+
     @media (max-width: 400px) {
       .floating-share-btn {
         bottom: 12px;

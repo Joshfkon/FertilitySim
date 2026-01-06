@@ -1585,6 +1585,35 @@ const liberalPolicies = [
       growthContainer.classList.toggle('visible', tfr.tfrDrag > 0);
       if (tfr.tfrDrag > 0) document.getElementById('growth-penalty-val').textContent = `-${tfr.tfrDrag.toFixed(2)}`;
       
+      // Update inflation rate display
+      const inflationRateContainer = document.getElementById('inflation-rate-container');
+      const inflationRateVal = document.getElementById('inflation-rate-val');
+      const inflationRateStatus = document.getElementById('inflation-rate-status');
+      
+      if (window.lastInflationDynamics) {
+        const cpi = window.lastInflationDynamics.totalCPI;
+        inflationRateVal.textContent = cpi.toFixed(1) + '%';
+        
+        // Show badge and set appropriate styling
+        inflationRateContainer.classList.remove('elevated', 'high', 'crisis');
+        
+        if (cpi > 8) {
+          inflationRateContainer.classList.add('visible', 'crisis');
+          inflationRateStatus.textContent = 'CRISIS';
+        } else if (cpi > 5) {
+          inflationRateContainer.classList.add('visible', 'high');
+          inflationRateStatus.textContent = 'HIGH';
+        } else if (cpi > 3.5) {
+          inflationRateContainer.classList.add('visible', 'elevated');
+          inflationRateStatus.textContent = 'ELEVATED';
+        } else if (cpi > 2.5) {
+          inflationRateContainer.classList.add('visible');
+          inflationRateStatus.textContent = '';
+        } else {
+          inflationRateContainer.classList.remove('visible');
+        }
+      }
+      
       // Show deficit warning modal on first deficit
       if (tfr.deficit > 0 && !window.deficitWarningShown) {
         window.deficitWarningShown = true;
@@ -1636,6 +1665,19 @@ const liberalPolicies = [
       } else {
         gdpChangeEl.textContent = `${gdpPct.toFixed(1)}%`;
         gdpChangeEl.className = 'fiscal-sublabel negative';
+      }
+      
+      // Show GDP crash warning if economy is severely damaged
+      if (gdpPct < -8 && !window.gdpCrashWarningShown) {
+        window.gdpCrashWarningShown = true;
+        const cpi = window.lastInflationDynamics ? window.lastInflationDynamics.totalCPI : 2.5;
+        document.getElementById('gdp-crash-detail').textContent = `${gdpPct.toFixed(1)}% from baseline ($${Math.abs(gdpDelta).toFixed(0)}T)`;
+        document.getElementById('gdp-crash-cpi').textContent = `${cpi.toFixed(1)}%`;
+        document.getElementById('gdp-crash-modal').classList.add('visible');
+      }
+      // Reset warning flag if economy recovers
+      if (gdpPct >= -5) {
+        window.gdpCrashWarningShown = false;
       }
 
       // GDP per capita calculation
@@ -3391,6 +3433,22 @@ const liberalPolicies = [
           crisisModal.classList.remove('visible');
         }
       });
+      
+      // GDP crash modal
+      const gdpCrashModal = document.getElementById('gdp-crash-modal');
+      const closeGdpCrashBtn = document.getElementById('close-gdp-crash-modal');
+      
+      if (closeGdpCrashBtn) {
+        closeGdpCrashBtn.addEventListener('click', () => {
+          gdpCrashModal.classList.remove('visible');
+        });
+        
+        gdpCrashModal.addEventListener('click', (e) => {
+          if (e.target === gdpCrashModal) {
+            gdpCrashModal.classList.remove('visible');
+          }
+        });
+      }
     }
 
     function getPersonalityType(tfr, fiscal, policies, entitlements, taxes, illiberalPolicies, gdp2075 = 75) {
