@@ -3712,8 +3712,9 @@ const liberalPolicies = [
       }
       
       shareX.addEventListener('click', () => {
-        const text = generateShareText();
-        const url = 'https://tfrsim.com';
+        const encoded = encodeStateForURL();
+        const url = encoded ? `https://tfrsim.com/?s=${encoded}` : 'https://tfrsim.com';
+        
         // For Twitter, use a shorter version
         const tfr = calculateTFR();
         const type = document.getElementById('share-type-title').textContent;
@@ -3734,7 +3735,9 @@ const liberalPolicies = [
       });
 
       shareCopy.addEventListener('click', () => {
-        const text = generateShareText();
+        const encoded = encodeStateForURL();
+        const shareUrl = encoded ? `https://tfrsim.com/?s=${encoded}` : 'https://tfrsim.com';
+        const text = generateShareText() + `\n\n👆 See my full package:\n${shareUrl}`;
         
         if (navigator.clipboard && window.isSecureContext) {
           navigator.clipboard.writeText(text).then(() => {
@@ -3874,6 +3877,292 @@ const liberalPolicies = [
     // === STATE PERSISTENCE ===
     const STORAGE_KEY = 'tfrsim_state_v1';
     
+    // Encode state for URL sharing
+    function encodeStateForURL() {
+      const state = {
+        lp: liberalPolicies.filter(p => p.enabled).map(p => ({ i: p.id, n: p.intensity })),
+        ip: illiberalPolicies.filter(p => p.enabled).map(p => p.id),
+        er: entitlementReforms.filter(r => r.enabled).map(r => ({ i: r.id, t: r.threshold })),
+        tx: taxIncreases.filter(t => t.enabled).map(t => ({ i: t.id, t: t.threshold })),
+        im: {
+          l: immigrationConfig.annualLevel,
+          m: immigrationConfig.selectionMechanism
+        }
+      };
+      try {
+        const json = JSON.stringify(state);
+        return btoa(encodeURIComponent(json));
+      } catch (e) {
+        console.warn('Failed to encode state:', e);
+        return null;
+      }
+    }
+    
+    // Decode state from URL
+    function decodeStateFromURL(encoded) {
+      try {
+        const json = decodeURIComponent(atob(encoded));
+        return JSON.parse(json);
+      } catch (e) {
+        console.warn('Failed to decode state:', e);
+        return null;
+      }
+    }
+    
+    // Apply decoded state to the app
+    function applySharedState(state) {
+      // Reset all policies first
+      liberalPolicies.forEach(p => { p.enabled = false; p.intensity = 1; });
+      illiberalPolicies.forEach(p => { p.enabled = false; });
+      entitlementReforms.forEach(r => { r.enabled = false; });
+      taxIncreases.forEach(t => { t.enabled = false; });
+      
+      // Apply liberal policies
+      if (state.lp) {
+        state.lp.forEach(saved => {
+          const policy = liberalPolicies.find(p => p.id === saved.i);
+          if (policy) {
+            policy.enabled = true;
+            policy.intensity = saved.n || 1;
+          }
+        });
+      }
+      
+      // Apply illiberal policies
+      if (state.ip) {
+        state.ip.forEach(id => {
+          const policy = illiberalPolicies.find(p => p.id === id);
+          if (policy) policy.enabled = true;
+        });
+      }
+      
+      // Apply entitlement reforms
+      if (state.er) {
+        state.er.forEach(saved => {
+          const reform = entitlementReforms.find(r => r.id === saved.i);
+          if (reform) {
+            reform.enabled = true;
+            if (saved.t !== undefined) reform.threshold = saved.t;
+          }
+        });
+      }
+      
+      // Apply taxes
+      if (state.tx) {
+        state.tx.forEach(saved => {
+          const tax = taxIncreases.find(t => t.id === saved.i);
+          if (tax) {
+            tax.enabled = true;
+            if (saved.t !== undefined) tax.threshold = saved.t;
+          }
+        });
+      }
+      
+      // Apply immigration
+      if (state.im) {
+        immigrationConfig.annualLevel = state.im.l || 1000;
+        immigrationConfig.selectionMechanism = state.im.m || 'current';
+      }
+    }
+    
+    // Show shared preview modal
+    function showSharedPreview(state) {
+      // Temporarily apply state to calculate results
+      const originalState = {
+        lp: liberalPolicies.map(p => ({ id: p.id, enabled: p.enabled, intensity: p.intensity })),
+        ip: illiberalPolicies.map(p => ({ id: p.id, enabled: p.enabled })),
+        er: entitlementReforms.map(r => ({ id: r.id, enabled: r.enabled, threshold: r.threshold })),
+        tx: taxIncreases.map(t => ({ id: t.id, enabled: t.enabled, threshold: t.threshold })),
+        im: { ...immigrationConfig }
+      };
+      
+      applySharedState(state);
+      
+      // Calculate results
+      const tfr = calculateTFR();
+      const fiscal = calculateFiscal();
+      const feasibility = calculateFeasibility();
+      const entitlementSavings = calculateEntitlementSavings();
+      const gdp2075 = calculateGDP2075(tfr.mid, tfr.gdpDrag, entitlementSavings, tfr.spending, tfr.offsets);
+      
+      const enabledPolicies = [...liberalPolicies, ...illiberalPolicies].filter(p => p.enabled);
+      const enabledEntitlements = entitlementReforms.filter(r => r.enabled);
+      const enabledTaxes = taxIncreases.filter(t => t.enabled);
+      
+      // Get personality type
+      const type = getPersonalityType(tfr, fiscal, enabledPolicies.length, enabledEntitlements.length, enabledTaxes.length, illiberalPolicies, gdp2075);
+      
+      // Populate modal
+      document.getElementById('preview-type-icon').textContent = type.icon;
+      document.getElementById('preview-type-title').textContent = type.title;
+      document.getElementById('preview-type-desc').textContent = type.desc;
+      
+      document.getElementById('preview-tfr').textContent = tfr.mid.toFixed(2);
+      document.getElementById('preview-tfr').style.color = tfr.mid >= 2.1 ? 'var(--success)' : tfr.mid >= 1.8 ? '#daa520' : 'var(--accent)';
+      
+      document.getElementById('preview-gdp').textContent = `$${gdp2075.toFixed(0)}T`;
+      
+      const fiscalEl = document.getElementById('preview-fiscal');
+      if (fiscal.net <= 0) {
+        fiscalEl.textContent = `+$${Math.abs(Math.round(fiscal.net))}B`;
+        fiscalEl.style.color = 'var(--success)';
+      } else {
+        fiscalEl.textContent = `-$${Math.round(fiscal.net)}B`;
+        fiscalEl.style.color = 'var(--accent)';
+      }
+      
+      document.getElementById('preview-feasibility').textContent = feasibility.grade;
+      
+      // Populate policy lists
+      const policiesEl = document.getElementById('preview-policies');
+      const policiesSection = document.getElementById('preview-policies-section');
+      const enabledLiberal = liberalPolicies.filter(p => p.enabled);
+      const enabledIlliberal = illiberalPolicies.filter(p => p.enabled);
+      
+      if (enabledLiberal.length + enabledIlliberal.length > 0) {
+        policiesSection.classList.remove('hidden');
+        policiesEl.innerHTML = [...enabledLiberal, ...enabledIlliberal].map(p => 
+          `<span class="preview-item policy">${p.name}</span>`
+        ).join('');
+      } else {
+        policiesSection.classList.add('hidden');
+      }
+      
+      const taxesEl = document.getElementById('preview-taxes');
+      const taxesSection = document.getElementById('preview-taxes-section');
+      if (enabledTaxes.length > 0) {
+        taxesSection.classList.remove('hidden');
+        taxesEl.innerHTML = enabledTaxes.map(t => 
+          `<span class="preview-item tax">${t.name}</span>`
+        ).join('');
+      } else {
+        taxesSection.classList.add('hidden');
+      }
+      
+      const entitlementsEl = document.getElementById('preview-entitlements');
+      const entitlementsSection = document.getElementById('preview-entitlements-section');
+      if (enabledEntitlements.length > 0) {
+        entitlementsSection.classList.remove('hidden');
+        entitlementsEl.innerHTML = enabledEntitlements.map(r => 
+          `<span class="preview-item entitlement">${r.name}</span>`
+        ).join('');
+      } else {
+        entitlementsSection.classList.add('hidden');
+      }
+      
+      const immigrationEl = document.getElementById('preview-immigration');
+      const immigrationSection = document.getElementById('preview-immigration-section');
+      const mechNames = { current: 'Current System', points: 'Points-Based', employment: 'Employment-Based', family: 'Family-Focused', diversity: 'Diversity Lottery' };
+      const immLevel = immigrationConfig.annualLevel >= 1000 ? `${(immigrationConfig.annualLevel/1000).toFixed(1)}M` : `${immigrationConfig.annualLevel}k`;
+      immigrationSection.classList.remove('hidden');
+      immigrationEl.innerHTML = `<span class="preview-item immigration">${immLevel}/yr • ${mechNames[immigrationConfig.selectionMechanism]}</span>`;
+      
+      // Restore original state
+      originalState.lp.forEach(saved => {
+        const p = liberalPolicies.find(x => x.id === saved.id);
+        if (p) { p.enabled = saved.enabled; p.intensity = saved.intensity; }
+      });
+      originalState.ip.forEach(saved => {
+        const p = illiberalPolicies.find(x => x.id === saved.id);
+        if (p) p.enabled = saved.enabled;
+      });
+      originalState.er.forEach(saved => {
+        const r = entitlementReforms.find(x => x.id === saved.id);
+        if (r) { r.enabled = saved.enabled; r.threshold = saved.threshold; }
+      });
+      originalState.tx.forEach(saved => {
+        const t = taxIncreases.find(x => x.id === saved.id);
+        if (t) { t.enabled = saved.enabled; t.threshold = saved.threshold; }
+      });
+      immigrationConfig.annualLevel = originalState.im.annualLevel;
+      immigrationConfig.selectionMechanism = originalState.im.selectionMechanism;
+      
+      // Show modal
+      document.getElementById('shared-preview-modal').classList.add('visible');
+      
+      // Store the shared state for later
+      window.pendingSharedState = state;
+    }
+    
+    // Initialize shared preview modal handlers
+    function initSharedPreviewModal() {
+      const modal = document.getElementById('shared-preview-modal');
+      const tryBtn = document.getElementById('preview-try-btn');
+      const freshBtn = document.getElementById('preview-fresh-btn');
+      
+      tryBtn.addEventListener('click', () => {
+        if (window.pendingSharedState) {
+          applySharedState(window.pendingSharedState);
+          window.pendingSharedState = null;
+          
+          // Re-render everything
+          document.getElementById('liberal-policies').innerHTML = '';
+          document.getElementById('illiberal-policies').innerHTML = '';
+          document.getElementById('entitlement-reforms').innerHTML = '';
+          document.getElementById('tax-increases').innerHTML = '';
+          
+          liberalPolicies.forEach(p => renderPolicyCard(p, document.getElementById('liberal-policies')));
+          illiberalPolicies.forEach(p => renderPolicyCard(p, document.getElementById('illiberal-policies'), true));
+          entitlementReforms.forEach(r => renderReformCard(r, document.getElementById('entitlement-reforms'), false));
+          taxIncreases.forEach(t => renderReformCard(t, document.getElementById('tax-increases'), true));
+          
+          // Update immigration UI
+          const levelSlider = document.getElementById('immigration-level-slider');
+          if (levelSlider) levelSlider.value = immigrationConfig.annualLevel;
+          renderSelectionMechanisms();
+          renderMechanismControls();
+          updateCompositionBar();
+          updateImmigrationDisplay();
+          
+          updateDisplay();
+        }
+        modal.classList.remove('visible');
+        
+        // Clear URL parameter
+        const url = new URL(window.location);
+        url.searchParams.delete('s');
+        window.history.replaceState({}, '', url);
+      });
+      
+      freshBtn.addEventListener('click', () => {
+        window.pendingSharedState = null;
+        modal.classList.remove('visible');
+        
+        // Clear URL parameter
+        const url = new URL(window.location);
+        url.searchParams.delete('s');
+        window.history.replaceState({}, '', url);
+      });
+      
+      // Click outside to dismiss
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          window.pendingSharedState = null;
+          modal.classList.remove('visible');
+          
+          const url = new URL(window.location);
+          url.searchParams.delete('s');
+          window.history.replaceState({}, '', url);
+        }
+      });
+    }
+    
+    // Check for shared state in URL on load
+    function checkForSharedState() {
+      const params = new URLSearchParams(window.location.search);
+      const encoded = params.get('s');
+      
+      if (encoded) {
+        const state = decodeStateFromURL(encoded);
+        if (state) {
+          // Delay to let the page render first
+          setTimeout(() => showSharedPreview(state), 500);
+          return true;
+        }
+      }
+      return false;
+    }
+    
     function saveState() {
       const state = {
         liberalPolicies: liberalPolicies.map(p => ({ id: p.id, enabled: p.enabled, intensity: p.intensity })),
@@ -3968,8 +4257,11 @@ const liberalPolicies = [
     }
 
     function init() {
-      // Load saved state before rendering
-      const hasState = loadState();
+      // Check for shared state in URL first (before loading saved state)
+      const hasSharedState = checkForSharedState();
+      
+      // Load saved state before rendering (unless we have a shared state URL)
+      const hasState = !hasSharedState && loadState();
       
       initSplash();
       liberalPolicies.forEach(p => renderPolicyCard(p, document.getElementById('liberal-policies')));
@@ -3982,6 +4274,7 @@ const liberalPolicies = [
       initPenaltyBadges();
       initDeficitModal();
       initShareModal();
+      initSharedPreviewModal();
       updateDisplay();
       
       // If we loaded state, save again to ensure consistency

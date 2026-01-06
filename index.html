@@ -416,6 +416,60 @@
       </div>
     </div>
 
+    <!-- Shared Config Preview Modal -->
+    <div class="modal-overlay" id="shared-preview-modal">
+      <div class="modal-content shared-preview-content">
+        <div class="modal-header shared-preview-header">
+          <span class="modal-icon" id="preview-type-icon">🎯</span>
+          <h3 id="preview-type-title">Someone's Policy Package</h3>
+          <p id="preview-type-desc" style="font-size: 12px; margin: 4px 0 0 0; opacity: 0.8;"></p>
+        </div>
+        
+        <div class="shared-preview-results">
+          <div class="preview-stat">
+            <span class="preview-stat-label">TFR</span>
+            <span class="preview-stat-value" id="preview-tfr">1.62</span>
+          </div>
+          <div class="preview-stat">
+            <span class="preview-stat-label">GDP 2075</span>
+            <span class="preview-stat-value" id="preview-gdp">$84T</span>
+          </div>
+          <div class="preview-stat">
+            <span class="preview-stat-label">Fiscal</span>
+            <span class="preview-stat-value" id="preview-fiscal">$0B</span>
+          </div>
+          <div class="preview-stat">
+            <span class="preview-stat-label">Feasibility</span>
+            <span class="preview-stat-value" id="preview-feasibility">B</span>
+          </div>
+        </div>
+        
+        <div class="shared-preview-details">
+          <div class="preview-section" id="preview-policies-section">
+            <div class="preview-section-title">🍼 Fertility Policies</div>
+            <div class="preview-section-items" id="preview-policies"></div>
+          </div>
+          <div class="preview-section" id="preview-taxes-section">
+            <div class="preview-section-title">💵 Taxes</div>
+            <div class="preview-section-items" id="preview-taxes"></div>
+          </div>
+          <div class="preview-section" id="preview-entitlements-section">
+            <div class="preview-section-title">🏛️ Entitlement Reforms</div>
+            <div class="preview-section-items" id="preview-entitlements"></div>
+          </div>
+          <div class="preview-section" id="preview-immigration-section">
+            <div class="preview-section-title">✈️ Immigration</div>
+            <div class="preview-section-items" id="preview-immigration"></div>
+          </div>
+        </div>
+        
+        <div class="shared-preview-actions">
+          <button class="preview-try-btn" id="preview-try-btn">🚀 Try This Package</button>
+          <button class="preview-fresh-btn" id="preview-fresh-btn">Start Fresh Instead</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Floating Share Button -->
     <button class="floating-share-btn" id="open-share-modal">
       <span>📊</span> Share Results
