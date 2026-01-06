@@ -619,19 +619,19 @@ const liberalPolicies = [
         thresholdMin: 25,
         thresholdMax: 200,
         thresholdLabel: 'Annual rate (basis points)',
-        gdpDrag: -0.002, // GDP INCREASE (rare "free lunch")
-        tfrDrag: -0.004, // Slight TFR BENEFIT (lower housing costs)
-        dragRationale: 'GDP INCREASES: Land supply is fixed, so no deadweight loss. Reduces speculation, encourages productive use.',
+        gdpDrag: 0.0005, // Small drag at 1% rate (transition costs offset efficiency gains)
+        tfrDrag: -0.003, // Slight TFR BENEFIT (lower housing costs)
+        dragRationale: 'Low rates: GDP gain from reduced speculation. High rates: transition costs (wealth shock, liquidity) create modest drag.',
         confidence: 'low-medium',
         methodology: {
-          derivation: 'Land is fixed in supply—taxing it causes no deadweight loss. Milton Friedman called it "the least bad tax." Stiglitz (2025) shows LVT can increase growth by discouraging land speculation. Revenue highly uncertain: 1% rate on ~$25T land base = ~$250-500B. TFR slightly positive: lower land prices help young families afford housing.',
+          derivation: 'Land is fixed in supply—taxing it causes minimal deadweight loss. Milton Friedman called it "the least bad tax." At LOW rates (<0.5%), reduced speculation may increase GDP. At HIGH rates (>1.5%), transition effects dominate: wealth shock to landowners reduces consumption, liquidity constraints force asset sales. Net effect at 1%: roughly neutral. TFR slightly positive: lower land prices help young families afford housing.',
           sources: [
-            { cite: 'Stiglitz (1977)', finding: 'Henry George Theorem: LVT can fund public goods optimally', elasticity: 'Theoretically perfect' },
-            { cite: 'Stiglitz (2025)', finding: 'LVT increases growth rate via reduced speculation', elasticity: 'Positive GDP effect' },
+            { cite: 'Stiglitz (1977)', finding: 'Henry George Theorem: LVT can fund public goods optimally', elasticity: 'Theoretically non-distortionary' },
+            { cite: 'Stiglitz (2025)', finding: 'LVT reduces speculation, can increase growth at moderate rates', elasticity: 'Positive at low rates' },
             { cite: 'Oates & Schwab (1997)', finding: 'Pittsburgh two-rate tax increased building activity', elasticity: 'Empirical support' },
-            { cite: 'IMF (2022)', finding: '"Land value taxation... can even be productive because it encourages development"', elasticity: 'Institutional endorsement' }
+            { cite: 'IMF (2022)', finding: '"Land value taxation... can even be productive"', elasticity: 'But notes transition costs' }
           ],
-          notes: 'HIGH UNCERTAINTY: ±50% on revenue. Implementation challenges severe: valuation difficulty, political resistance, liquidity concerns, possible constitutional issues (apportionment). No federal-level experience anywhere. Theoretical case is bulletproof but practical application untested at scale.'
+          notes: 'GDP EFFECT IS RATE-DEPENDENT: 0.25% → slight gain; 1% → ~neutral; 2% → modest drag. Even at high rates, drag is ~1/3 of equivalent income tax. HIGH UNCERTAINTY: ±50% on revenue. Implementation challenges: valuation, political resistance, liquidity, constitutional questions.'
         }
       },
       { 
@@ -2339,7 +2339,7 @@ const liberalPolicies = [
                        tax.id === 'carbon-tax' ? 0.005 :
                        tax.id === 'vat' ? 0.001 :
                        tax.id === 'stepped-up-basis' ? -0.001 : // POSITIVE for GDP
-                       tax.id === 'land-value-tax' ? -0.002 : // POSITIVE for GDP
+                       tax.id === 'land-value-tax' ? 0.002 : // Rate-dependent: negative at low, positive at high
                        tax.id === 'income-tax-all' ? 0.0006 : 0.001;
 
       // Calculate multiplier based on threshold vs default
@@ -2394,7 +2394,13 @@ const liberalPolicies = [
         const ratePercent = tax.threshold / 100;
         const behavioralFactor = 1 - 0.05 * ratePercent; // slight base erosion at high rates
         multiplier = ratePercent * behavioralFactor;
-        dragMultiplier = ratePercent;
+        // GDP drag is rate-dependent: low rates = slight benefit, high rates = modest drag
+        // baseGdpDrag = 0.002, multiplied by (rate - 0.4)
+        // At 0.25%: 0.002 * -0.15 = -0.0003 (GDP gain)
+        // At 0.5%:  0.002 * 0.1  = +0.0002 (tiny drag)  
+        // At 1%:    0.002 * 0.6  = +0.0012 (small drag)
+        // At 2%:    0.002 * 1.6  = +0.0032 (modest drag)
+        dragMultiplier = ratePercent - 0.4;
       } else if (tax.id === 'income-tax-all') {
         // Higher pp increase = more revenue and more drag
         // 1pp is base
