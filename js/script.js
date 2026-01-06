@@ -130,6 +130,107 @@ const liberalPolicies = [
           ],
           notes: '$10k grows to ~$34k over 18 years at 7% return. Eligible uses: education, housing down payment, business startup. PRIMARY VALUE: Creates forward-looking constituency, not direct fertility impact.'
         }
+      },
+      { 
+        id: 'birth-grant', 
+        name: 'Lump-Sum Birth Grant', 
+        description: 'One-time payment for 2nd+ child (Russia model).', 
+        costLow: 30, costHigh: 40, tfrLow: 0.12, tfrHigh: 0.18, 
+        enabled: false, intensity: 100,
+        sliderConfig: { label: 'Grant amount', min: 5, max: 20, default: 10, format: v => `$${v}k` },
+        confidence: 'medium-high',
+        methodology: {
+          derivation: 'Sorvachev & Yakovlev (2020): ~$50k government cost per marginal birth induced. Russia\'s $10k grant (≈1.5× median annual income) → +0.15 TFR. Linear scaling: +0.015 TFR per $1k up to ~$15k, then diminishing returns.',
+          sources: [
+            { cite: 'Sorvachev & Yakovlev (2020)', finding: '$10k grant → +0.15 TFR in Russia', elasticity: '+0.015 per $1k' },
+            { cite: 'Russian Maternity Capital', finding: '~$50k cost per marginal birth induced', elasticity: 'Direct observation' }
+          ],
+          notes: 'Best-evidenced lump sum policy. Targets 2nd+ births where marginal decisions are made. Formula: TFR = 0.015 × (grant/1000) × (1 - 0.02 × max(0, grant/1000 - 15)). Diminishing returns above $15k.'
+        }
+      },
+      { 
+        id: 'family-quotient', 
+        name: 'Family Tax Quotient', 
+        description: 'Divide income by family units for tax (France model).', 
+        costLow: 50, costHigh: 70, tfrLow: 0.04, tfrHigh: 0.06, 
+        enabled: false, intensity: 100,
+        sliderConfig: { label: 'Child weight', min: 0.3, max: 1.0, default: 0.5, format: v => `${v} adult eq.` },
+        confidence: 'low',
+        methodology: {
+          derivation: 'Landais (2003): 1% increase in tax relief → 0.05% increase in 3+ child households. Extremely weak elasticity: +0.0008 TFR per $1B spent. France\'s success is the package, not this single instrument.',
+          sources: [
+            { cite: 'Landais (2003)', finding: '1% tax relief increase → 0.05% increase in 3+ households', elasticity: '~0.0008 per $1B' }
+          ],
+          notes: '⚠️ WEAK ELASTICITY: Benefits scale with income (regressive). Effects concentrated in top quintile. Value is political durability, not fertility impact. France spends ~$60B for +0.05 TFR.'
+        }
+      },
+      { 
+        id: 'large-family-exemption', 
+        name: 'Large Family Tax Exemption', 
+        description: 'Full income tax exemption for mothers of 4+ children (Hungary model).', 
+        costLow: 15, costHigh: 25, tfrLow: 0.02, tfrHigh: 0.04, 
+        enabled: false, intensity: 100,
+        sliderConfig: { label: 'Qualifying children', min: 3, max: 5, default: 4, format: v => `${v}+ children` },
+        confidence: 'low',
+        methodology: {
+          derivation: 'No rigorous study isolates this policy. Using Cohen elasticity (0.3) with ~$5k average benefit for qualifying ~5% of mothers: +0.01-0.02 TFR. Hungary\'s recent TFR reversal (1.61→1.38) undermines confidence.',
+          sources: [
+            { cite: 'Cohen et al. (2013)', finding: 'Cash transfer elasticity ~0.3', elasticity: 'Applied to subset' },
+            { cite: 'Hungary experience', finding: 'TFR rose to 1.61 then fell to 1.38', elasticity: 'Uncertain' }
+          ],
+          notes: '⚠️ LOW CONFIDENCE: Hungary\'s TFR reversal is concerning. Targets small population (high-parity mothers). May have "large family culture" signaling effects. Elasticity: ~0.002 TFR per $1B.'
+        }
+      },
+      { 
+        id: 'housing-subsidy', 
+        name: 'Housing-Linked Birth Subsidy', 
+        description: 'Grant + subsidized mortgage for families with 3+ children (Hungary CSOK model).', 
+        costLow: 40, costHigh: 60, tfrLow: 0.06, tfrHigh: 0.12, 
+        enabled: false, intensity: 100,
+        sliderConfig: { label: 'Total benefit value', min: 30, max: 80, default: 50, format: v => `$${v}k` },
+        confidence: 'low',
+        methodology: {
+          derivation: 'CSOK provides ~$35k grant + subsidized interest (total ~$50-80k value) for 3+ children, tied to marriage and home purchase. IFS analysis: contributed +0.05 to +0.10 of Hungary\'s gains. Effect depends heavily on housing market conditions.',
+          sources: [
+            { cite: 'IFS Hungary analysis', finding: 'CSOK contributed +0.05 to +0.10 TFR', elasticity: '+0.0015 per $1B (base)' },
+            { cite: 'Dettling & Kearney (2014)', finding: '10% housing price increase → 2-3% fertility decrease', elasticity: 'Housing channel' }
+          ],
+          notes: '⚠️ HOUSING-DEPENDENT: Effect multiplied in high-constraint markets. Addresses specific constraint (housing) rather than general income. Tied to marriage requirement.'
+        }
+      },
+      { 
+        id: 'part-time-rights', 
+        name: 'Part-Time Work Protections', 
+        description: 'Legal right to reduced hours with equal benefits (Netherlands model).', 
+        costLow: 0, costHigh: 5, tfrLow: 0.02, tfrHigh: 0.04, 
+        enabled: false, intensity: 100,
+        sliderConfig: { label: 'Protection level', min: 1, max: 3, default: 2, format: v => v === 1 ? 'Right to request' : v === 2 ? 'Strong right' : 'Full Dutch model' },
+        confidence: 'low',
+        methodology: {
+          derivation: 'Regulatory intervention, no spending elasticity. Netherlands has highest part-time rate in OECD and above-average fertility. Tier 1 (right to request): +0.02; Tier 2 (strong right): +0.03; Tier 3 (full model): +0.04.',
+          sources: [
+            { cite: 'Netherlands model', finding: 'Highest part-time rate in OECD', elasticity: 'Correlational only' },
+            { cite: 'OECD Family Database', finding: 'Part-time work correlates with fertility in cross-country data', elasticity: 'Indirect' }
+          ],
+          notes: '⚠️ CORRELATIONAL: No causal evidence. Cost is regulatory burden on employers, not government spending. May affect female labor force participation. Tier system: 1=request right, 2=strong right, 3=presumptive right + equal benefits.'
+        }
+      },
+      { 
+        id: 'pension-credits', 
+        name: 'Pension Credits for Childcare', 
+        description: 'Pension credit for years spent on childcare (Germany Mütterrente model).', 
+        costLow: 20, costHigh: 30, tfrLow: 0.01, tfrHigh: 0.03, 
+        enabled: false, intensity: 100,
+        sliderConfig: { label: 'Credit years per child', min: 1, max: 5, default: 3, format: v => `${v} years` },
+        confidence: 'very-low',
+        methodology: {
+          derivation: 'Germany provides 3 years pension credit per child at average wage equivalent (~$15-20k NPV per child). However, benefit is received 30-40 years after childbearing decision. At 5% discount rate, perceived value is ~25% of nominal.',
+          sources: [
+            { cite: 'Germany Mütterrente', finding: '~€100/month additional pension per child', elasticity: 'Time-discounted' },
+            { cite: 'Behavioral economics', finding: 'People heavily discount distant benefits', elasticity: 'Theoretical' }
+          ],
+          notes: '⚠️ VERY WEAK: Time discounting kills incentive effect. Benefit 30-40 years away has ~25% perceived value. Elasticity: +0.0008 TFR per $1B nominal (effectively +0.0003 after discounting). Ceiling: +0.04 TFR.'
+        }
       }
     ];
 
