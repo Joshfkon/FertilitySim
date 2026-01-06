@@ -1,6 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <rect width="100" height="100" rx="20" fill="#1a1a1a"/>
-  <text y="0.9em" x="50%" text-anchor="middle" font-size="65" font-family="serif">👶</text>
-  <text y="0.75em" x="75%" text-anchor="middle" font-size="30" fill="#7cb342">↑</text>
+  <rect width="100" height="100" rx="16" fill="#1a1a1a"/>
+  <!-- Upward trend line chart -->
+  <polyline points="15,70 35,55 55,60 85,25" stroke="#7cb342" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Arrow head -->
+  <polygon points="85,25 72,32 78,38" fill="#7cb342"/>
+  <!-- TFR text -->
+  <text x="50" y="88" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#666" text-anchor="middle">TFR</text>
 </svg>
 
