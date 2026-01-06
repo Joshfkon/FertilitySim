@@ -3494,31 +3494,23 @@ const liberalPolicies = [
       const enabledTaxes = taxIncreases.filter(t => t.enabled);
       const immConfig = immigrationConfig;
       
-      // 1. FISCAL COST
-      // High spending = hard to pass
-      if (fiscal.spending > 300) {
-        const penalty = Math.min(25, Math.floor((fiscal.spending - 300) / 50) * 5);
+      // 1. FISCAL BALANCE (only unfunded spending is penalized)
+      const netDeficit = fiscal.spending - fiscal.offsets;
+      if (netDeficit > 200) {
+        // Unfunded spending is hard to pass
+        const penalty = Math.min(25, Math.floor((netDeficit - 200) / 100) * 8);
         score -= penalty;
-        factors.push({ label: 'High spending', impact: -penalty, class: 'negative' });
+        factors.push({ label: 'Unfunded spending', impact: -penalty, class: 'negative' });
+      } else if (netDeficit <= 0 && fiscal.spending > 100) {
+        // Fully funded large package is politically impressive
+        score += 10;
+        factors.push({ label: 'Fully funded package', impact: +10, class: 'positive' });
       } else if (fiscal.spending > 0 && fiscal.spending <= 100) {
         score += 5;
         factors.push({ label: 'Modest spending', impact: +5, class: 'positive' });
       }
       
-      // 2. OFFSETS / PAY-FORS
-      // Having offsets makes it more feasible
-      if (fiscal.offsets > 0) {
-        const offsetRatio = fiscal.offsets / Math.max(1, fiscal.spending);
-        if (offsetRatio >= 1) {
-          score += 15;
-          factors.push({ label: 'Fully funded', impact: +15, class: 'positive' });
-        } else if (offsetRatio >= 0.5) {
-          score += 8;
-          factors.push({ label: 'Partially funded', impact: +8, class: 'positive' });
-        }
-      }
-      
-      // 3. ENTITLEMENT CUTS
+      // 2. ENTITLEMENT CUTS
       // Very politically difficult
       if (enabledEntitlements.length > 0) {
         const penalty = enabledEntitlements.length * 8;
@@ -3526,12 +3518,33 @@ const liberalPolicies = [
         factors.push({ label: `${enabledEntitlements.length} entitlement cut${enabledEntitlements.length > 1 ? 's' : ''}`, impact: -penalty, class: 'negative' });
       }
       
-      // 4. TAX INCREASES
-      // Moderately difficult
+      // 3. TAX INCREASES - base penalty + specific unpopular taxes
       if (enabledTaxes.length > 0) {
-        const penalty = enabledTaxes.length * 5;
-        score -= penalty;
-        factors.push({ label: `${enabledTaxes.length} tax increase${enabledTaxes.length > 1 ? 's' : ''}`, impact: -penalty, class: 'negative' });
+        // Base penalty per tax
+        let taxPenalty = enabledTaxes.length * 3;
+        
+        // Extra penalties for politically unpopular taxes
+        const unpopularTaxes = {
+          'land-value-tax': { penalty: 20, label: 'Land Value Tax (radical reform)' },
+          'vat': { penalty: 12, label: 'New federal VAT' },
+          'income-tax-all': { penalty: 10, label: 'Broad income tax hike' },
+          'carbon-tax': { penalty: 8, label: 'Carbon tax (energy costs)' },
+          'capital-gains': { penalty: 5, label: 'Capital gains reform' },
+          'stepped-up-basis': { penalty: 5, label: '"Death tax" expansion' }
+        };
+        
+        enabledTaxes.forEach(tax => {
+          if (unpopularTaxes[tax.id]) {
+            const extra = unpopularTaxes[tax.id];
+            taxPenalty += extra.penalty;
+            factors.push({ label: extra.label, impact: -extra.penalty, class: 'negative' });
+          }
+        });
+        
+        score -= taxPenalty;
+        if (enabledTaxes.length > 0 && !enabledTaxes.some(t => unpopularTaxes[t.id])) {
+          factors.push({ label: `${enabledTaxes.length} tax increase${enabledTaxes.length > 1 ? 's' : ''}`, impact: -(enabledTaxes.length * 3), class: 'negative' });
+        }
       }
       
       // 5. ILLIBERAL POLICIES
