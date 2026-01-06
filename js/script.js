@@ -5,6 +5,7 @@ const liberalPolicies = [
         description: 'Monthly payment per child, ages 0-6. (Ages 7-17 at 60%)', 
         costLow: 250, costHigh: 300, tfrLow: 0.15, tfrHigh: 0.20, 
         enabled: false, intensity: 100,
+        overlapGroup: 'cash',
         sliderConfig: { label: 'Monthly amount', min: 200, max: 800, default: 500, format: v => `$${v}/mo` },
         confidence: 'medium',
         methodology: {
@@ -22,6 +23,7 @@ const liberalPolicies = [
         description: 'Federal tax return per 3rd+ child, ages 0-6.', 
         costLow: 100, costHigh: 150, tfrLow: 0.10, tfrHigh: 0.15, 
         enabled: false, intensity: 100,
+        overlapGroup: 'cash',
         sliderConfig: { label: 'Tax return %', min: 50, max: 150, default: 100, format: v => `${v}%` },
         confidence: 'medium',
         methodology: {
@@ -39,6 +41,7 @@ const liberalPolicies = [
         description: 'Subsidized childcare, ages 0-5. Quebec model.', 
         costLow: 80, costHigh: 100, tfrLow: 0.10, tfrHigh: 0.15, 
         enabled: false, intensity: 100,
+        overlapGroup: 'childcare',
         sliderConfig: { label: 'Family daily cost', min: 0, max: 20, default: 5, format: v => v === 0 ? 'Free' : `$${v}/day`, invert: true },
         confidence: 'high',
         methodology: {
@@ -56,6 +59,7 @@ const liberalPolicies = [
         description: '80% salary replacement, job-protected.', 
         costLow: 60, costHigh: 100, tfrLow: 0.08, tfrHigh: 0.12, 
         enabled: false, intensity: 100,
+        overlapGroup: 'childcare',
         sliderConfig: { label: 'Leave duration', min: 3, max: 18, default: 12, format: v => `${v} months` },
         confidence: 'medium-high',
         methodology: {
@@ -73,6 +77,7 @@ const liberalPolicies = [
         description: 'Student loans paused on marriage, forgiven on birth.', 
         costLow: 60, costHigh: 80, tfrLow: 0.06, tfrHigh: 0.12, 
         enabled: false, intensity: 100,
+        overlapGroup: 'financial',
         sliderConfig: { label: 'Forgiveness %', min: 25, max: 100, default: 100, format: v => `${v}%` },
         confidence: 'low',
         methodology: {
@@ -89,6 +94,7 @@ const liberalPolicies = [
         description: 'Direct federal construction in high-cost metros.', 
         costLow: 150, costHigh: 200, tfrLow: 0.12, tfrHigh: 0.20, 
         enabled: false, intensity: 100,
+        overlapGroup: 'housing',
         sliderConfig: { label: 'Units per year', min: 250, max: 1500, default: 1000, format: v => `${v}k units` },
         confidence: 'low',
         methodology: {
@@ -105,6 +111,7 @@ const liberalPolicies = [
         description: 'IVF, IUI, egg freezing covered by insurance.', 
         costLow: 15, costHigh: 25, tfrLow: 0.02, tfrHigh: 0.05, 
         enabled: false, intensity: 100,
+        overlapGroup: 'medical',
         sliderConfig: { label: 'IVF cycles covered', min: 2, max: 10, default: 6, format: v => v >= 10 ? 'Unlimited' : `${v} cycles` },
         confidence: 'medium',
         methodology: {
@@ -121,6 +128,7 @@ const liberalPolicies = [
         description: 'Trust fund at birth, accessible at 18 for education/housing.', 
         costLow: 40, costHigh: 50, tfrLow: 0.03, tfrHigh: 0.06, 
         enabled: false, intensity: 100,
+        overlapGroup: 'financial',
         sliderConfig: { label: 'Bond amount', min: 5, max: 25, default: 10, format: v => `$${v}k` },
         confidence: 'low',
         methodology: {
@@ -137,6 +145,7 @@ const liberalPolicies = [
         description: 'One-time payment for 2nd+ child (Russia model).', 
         costLow: 30, costHigh: 40, tfrLow: 0.12, tfrHigh: 0.18, 
         enabled: false, intensity: 100,
+        overlapGroup: 'cash',
         sliderConfig: { label: 'Grant amount', min: 5, max: 20, default: 10, format: v => `$${v}k` },
         confidence: 'medium-high',
         methodology: {
@@ -154,6 +163,7 @@ const liberalPolicies = [
         description: 'Divide income by family units for tax (France model).', 
         costLow: 50, costHigh: 70, tfrLow: 0.04, tfrHigh: 0.06, 
         enabled: false, intensity: 100,
+        overlapGroup: 'tax',
         sliderConfig: { label: 'Child weight', min: 0.3, max: 1.0, default: 0.5, format: v => `${v} adult eq.` },
         confidence: 'low',
         methodology: {
@@ -170,6 +180,7 @@ const liberalPolicies = [
         description: 'Full income tax exemption for mothers of 4+ children (Hungary model).', 
         costLow: 15, costHigh: 25, tfrLow: 0.02, tfrHigh: 0.04, 
         enabled: false, intensity: 100,
+        overlapGroup: 'tax',
         sliderConfig: { label: 'Qualifying children', min: 3, max: 5, default: 4, format: v => `${v}+ children` },
         confidence: 'low',
         methodology: {
@@ -187,6 +198,7 @@ const liberalPolicies = [
         description: 'Grant + subsidized mortgage for families with 3+ children (Hungary CSOK model).', 
         costLow: 40, costHigh: 60, tfrLow: 0.06, tfrHigh: 0.12, 
         enabled: false, intensity: 100,
+        overlapGroup: 'housing',
         sliderConfig: { label: 'Total benefit value', min: 30, max: 80, default: 50, format: v => `$${v}k` },
         confidence: 'low',
         methodology: {
@@ -204,6 +216,7 @@ const liberalPolicies = [
         description: 'Legal right to reduced hours with equal benefits (Netherlands model).', 
         costLow: 0, costHigh: 5, tfrLow: 0.02, tfrHigh: 0.04, 
         enabled: false, intensity: 100,
+        overlapGroup: 'childcare',
         sliderConfig: { label: 'Protection level', min: 1, max: 3, default: 2, format: v => v === 1 ? 'Right to request' : v === 2 ? 'Strong right' : 'Full Dutch model' },
         confidence: 'low',
         methodology: {
@@ -221,6 +234,7 @@ const liberalPolicies = [
         description: 'Pension credit for years spent on childcare (Germany Mütterrente model).', 
         costLow: 20, costHigh: 30, tfrLow: 0.01, tfrHigh: 0.03, 
         enabled: false, intensity: 100,
+        overlapGroup: 'financial',
         sliderConfig: { label: 'Credit years per child', min: 1, max: 5, default: 3, format: v => `${v} years` },
         confidence: 'very-low',
         methodology: {
@@ -241,6 +255,7 @@ const liberalPolicies = [
         description: 'Total prohibition, criminal penalties.', 
         costLow: 5, costHigh: 15, tfrLow: 0.50, tfrHigh: 0.70, 
         enabled: false, intensity: 100, 
+        overlapGroup: 'reproductive',
         historical: 'Romania 1966: TFR 1.9→3.7 in one year. ~10,000 women died.',
         confidence: 'medium',
         methodology: {
@@ -259,6 +274,7 @@ const liberalPolicies = [
         description: 'Ban hormonal contraception and IUDs.', 
         costLow: 2, costHigh: 8, tfrLow: 0.35, tfrHigh: 0.60, 
         enabled: false, intensity: 100,
+        overlapGroup: 'reproductive',
         confidence: 'medium',
         methodology: {
           derivation: 'US TFR dropped from 3.6 to 1.9 (1960-1973) following Pill introduction—a 1.7 TFR decline. Bailey (2010) found states that legalized Pill sales after Griswold v. Connecticut (1965) saw ~4% birth rate decline. Ireland delayed Pill introduction until 1981; their fertility collapse was delayed ~20 years vs other Western nations. Not all decline was Pill (cultural shifts, workforce entry), but modern contraception is the primary mechanical enabler of fertility control.',
@@ -276,6 +292,7 @@ const liberalPolicies = [
         description: '5-15% tax on childless adults over 25.', 
         costLow: -50, costHigh: -30, tfrLow: 0.05, tfrHigh: 0.12, 
         enabled: false, intensity: 100, revenue: true,
+        overlapGroup: 'marriage',
         historical: 'USSR 1941-1990: 6% tax. High compliance, unclear impact.',
         confidence: 'low',
         methodology: {
@@ -292,6 +309,7 @@ const liberalPolicies = [
         description: 'Eliminate no-fault divorce.', 
         costLow: 0, costHigh: 5, tfrLow: 0.02, tfrHigh: 0.08, 
         enabled: false, intensity: 100,
+        overlapGroup: 'marriage',
         historical: 'Pre-1970 US: higher stability, minimal fertility evidence.',
         confidence: 'low',
         methodology: {
@@ -308,6 +326,7 @@ const liberalPolicies = [
         description: 'Benefits/housing tied to married status.', 
         costLow: 5, costHigh: 15, tfrLow: 0.06, tfrHigh: 0.15, 
         enabled: false, intensity: 100,
+        overlapGroup: 'marriage',
         historical: 'Singapore: Housing priority for married couples.',
         confidence: 'low',
         methodology: {
@@ -1068,7 +1087,10 @@ const liberalPolicies = [
       }
       tfrDeclinePct *= uncertaintyAmp;
       
-      // Convert to absolute TFR penalty
+      // Convert percentage decline to absolute TFR penalty (in TFR points)
+      // Example: tfrDeclinePct = 10 means "10% decline from baseline"
+      // Penalty = (10/100) * 1.62 = 0.162 TFR points
+      // This is then subtracted from netLow/netHigh in calculateTFR() (points - points)
       const baseTFR = 1.62;
       let uncappedPenalty = (tfrDeclinePct / 100) * baseTFR;
       
@@ -1324,32 +1346,57 @@ const liberalPolicies = [
 
     function calculateTFR() {
       const baseTFR = 1.62;
-      let grossLow = 0, grossHigh = 0;
-      let enabledCount = 0;
       
-      [...liberalPolicies, ...illiberalPolicies].forEach(p => {
-        if (p.enabled) {
-          enabledCount++;
-          // tfrLow and tfrHigh are already scaled by the slider
-          grossLow += p.tfrLow;
-          grossHigh += p.tfrHigh;
+      // === GROUP-BASED INTERACTION DISCOUNT ===
+      // Step 1: Group enabled policies by overlapGroup
+      const enabledPolicies = [...liberalPolicies, ...illiberalPolicies].filter(p => p.enabled);
+      const groups = {};
+      
+      enabledPolicies.forEach(p => {
+        const group = p.overlapGroup || 'other';
+        if (!groups[group]) {
+          groups[group] = { policies: [], tfrLow: 0, tfrHigh: 0 };
         }
+        groups[group].policies.push(p);
+        groups[group].tfrLow += p.tfrLow;
+        groups[group].tfrHigh += p.tfrHigh;
       });
-
-      // Interaction discount only applies when multiple policies are stacked
-      // With 1 policy: no interaction discount
-      // With 2+ policies: apply discount for diminishing returns
-      const interactionFactor = enabledCount > 1 ? (1 - modelParams.interactionDiscount/100) : 1;
+      
+      // Step 2: Apply within-group exponential discount
+      // Within same category: 25% overlap per additional policy (0.75^(n-1))
+      const withinGroupDiscount = 1 - modelParams.interactionDiscount/100; // 0.75 by default
+      let discountedLow = 0, discountedHigh = 0;
+      const groupNames = Object.keys(groups);
+      
+      groupNames.forEach(groupName => {
+        const group = groups[groupName];
+        const n = group.policies.length;
+        // Exponential decay within group: first policy full effect, each additional discounted
+        const withinFactor = Math.pow(withinGroupDiscount, n - 1);
+        discountedLow += group.tfrLow * withinFactor;
+        discountedHigh += group.tfrHigh * withinFactor;
+      });
+      
+      // Step 3: Apply cross-group discount (mild 5% per additional group)
+      // Different policy categories have smaller overlaps
+      const crossGroupDiscount = 0.95;
+      const numGroups = groupNames.length;
+      const crossGroupFactor = numGroups > 1 ? Math.pow(crossGroupDiscount, numGroups - 1) : 1;
+      
+      let grossLow = discountedLow * crossGroupFactor;
+      let grossHigh = discountedHigh * crossGroupFactor;
+      
+      // Step 4: Apply context and implementation factors (unchanged)
       const contextFactor = (1 - modelParams.contextAdjustment/100);
       const implementationFactor = (modelParams.implementationRate/100);
       
-      const factor = interactionFactor * contextFactor * implementationFactor;
+      const factor = contextFactor * implementationFactor;
       let netLow = grossLow * factor, netHigh = grossHigh * factor;
 
       const fiscal = calculateFiscal();
-      const deficit = fiscal.spending;  // Gross spending
-      const offsets = fiscal.offsets;   // Revenue offsets
-      const inflationPenalty = calculateInflationPenalty(deficit, offsets);
+      const policySpending = fiscal.spending;  // Gross policy spending (not deficit)
+      const policyOffsets = fiscal.offsets;    // Revenue offsets from taxes/reforms
+      const inflationPenalty = calculateInflationPenalty(policySpending, policyOffsets);
       netLow -= inflationPenalty;
       netHigh -= inflationPenalty;
 
@@ -1802,16 +1849,45 @@ const liberalPolicies = [
 
     function updateEffectiveImpacts(tfr, fiscal) {
       const enabledPolicies = [...liberalPolicies, ...illiberalPolicies].filter(p => p.enabled);
-      const enabledCount = enabledPolicies.length;
       
-      // Calculate the discount factors
-      const interactionFactor = enabledCount > 1 ? (1 - modelParams.interactionDiscount/100) : 1;
+      // === GROUP-BASED DISCOUNT CALCULATION ===
+      // Group policies by overlapGroup
+      const groups = {};
+      enabledPolicies.forEach(p => {
+        const group = p.overlapGroup || 'other';
+        if (!groups[group]) groups[group] = [];
+        groups[group].push(p);
+      });
+      
+      const withinGroupDiscount = 1 - modelParams.interactionDiscount/100; // 0.75
+      const crossGroupDiscount = 0.95;
+      const numGroups = Object.keys(groups).length;
+      const crossGroupFactor = numGroups > 1 ? Math.pow(crossGroupDiscount, numGroups - 1) : 1;
       const contextFactor = (1 - modelParams.contextAdjustment/100);
       const implementationFactor = (modelParams.implementationRate/100);
-      const totalFactor = interactionFactor * contextFactor * implementationFactor;
       
-      // Calculate per-policy share of inflation penalty
-      const inflationPenaltyPerPolicy = enabledCount > 0 ? tfr.inflationPenalty / enabledCount : 0;
+      // Pre-calculate each policy's within-group factor
+      const policyFactors = {};
+      Object.keys(groups).forEach(groupName => {
+        const groupPolicies = groups[groupName];
+        const n = groupPolicies.length;
+        const withinFactor = Math.pow(withinGroupDiscount, n - 1);
+        groupPolicies.forEach(p => {
+          policyFactors[p.id] = withinFactor * crossGroupFactor * contextFactor * implementationFactor;
+        });
+      });
+      
+      // === INFLATION PENALTY ALLOCATION BY FISCAL IMPACT ===
+      // Calculate each policy's net fiscal contribution
+      const policyFiscalImpacts = {};
+      let totalNetCost = 0;
+      enabledPolicies.forEach(p => {
+        // Net cost: positive for spending policies, negative for revenue-generating
+        const costMid = (p.costLow + p.costHigh) / 2;
+        const netCost = p.revenue ? -Math.abs(costMid) : costMid;
+        policyFiscalImpacts[p.id] = Math.max(0, netCost); // Only positive contributors cause inflation
+        totalNetCost += policyFiscalImpacts[p.id];
+      });
       
       // Update each enabled policy card
       [...liberalPolicies, ...illiberalPolicies].forEach(policy => {
@@ -1827,10 +1903,15 @@ const liberalPolicies = [
         if (policy.enabled) {
           effectiveDiv.classList.remove('hidden');
           
-          // Calculate this policy's effective contribution
+          // Calculate this policy's effective contribution with its group-specific factor
           const grossTfr = (policy.tfrLow + policy.tfrHigh) / 2;
-          const afterDiscounts = grossTfr * totalFactor;
-          const effectiveTfr = afterDiscounts - inflationPenaltyPerPolicy;
+          const thisFactor = policyFactors[policy.id] || 1;
+          const afterDiscounts = grossTfr * thisFactor;
+          
+          // Proportional inflation penalty based on fiscal contribution
+          const fiscalShare = totalNetCost > 0 ? policyFiscalImpacts[policy.id] / totalNetCost : 0;
+          const inflationShare = tfr.inflationPenalty * fiscalShare;
+          const effectiveTfr = afterDiscounts - inflationShare;
           
           effectiveValue.textContent = effectiveTfr >= 0 ? `+${effectiveTfr.toFixed(2)} TFR` : `${effectiveTfr.toFixed(2)} TFR`;
           effectiveValue.classList.toggle('negative', effectiveTfr < 0);
@@ -1839,13 +1920,13 @@ const liberalPolicies = [
           let breakdownParts = [];
           breakdownParts.push(`Base: +${grossTfr.toFixed(2)}`);
           
-          if (totalFactor < 1) {
-            const discountPct = Math.round((1 - totalFactor) * 100);
+          if (thisFactor < 1) {
+            const discountPct = Math.round((1 - thisFactor) * 100);
             breakdownParts.push(`Discounts: −${discountPct}%`);
           }
           
-          if (inflationPenaltyPerPolicy > 0.001) {
-            breakdownParts.push(`Inflation: −${inflationPenaltyPerPolicy.toFixed(2)}`);
+          if (inflationShare > 0.001) {
+            breakdownParts.push(`Inflation: −${inflationShare.toFixed(2)}`);
           }
           
           effectiveBreakdown.textContent = breakdownParts.join(' → ');
