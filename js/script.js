@@ -912,27 +912,39 @@ const liberalPolicies = [
       }
       
       // ========================================
-      // SMOOTH TRANSITION: Policy → Total Deficit
+      // FIX: INCREMENTAL DEFICIT ONLY
       // ========================================
-      // v4: Phase in total deficit gradually instead of binary switch
-      // Below 6%: 100% policy deficit
-      // 6-8%: Blend from policy to total (elevated)
-      // Above 8%: 100% total deficit (stressed/dominance)
+      // The baseline deficit is already priced into baseline CPI (2.5%).
+      // Only INCREMENTAL policy deficit causes additional inflation.
+      // Regime determines elasticity magnitude, but base is always the delta.
+      //
+      // Key insight: if netPolicyImpact = 0, policyInducedInflation must = 0
+      // regardless of baseline deficit level or regime.
       
-      let deficitPctForPressure;
+      const baselineDeficitPctGDP = (modelParams.baselineDeficit / modelParams.currentGDP) * 100;
       
-      if (fiscalRegime === 'normal') {
-        deficitPctForPressure = Math.max(0, policyDeficitPctGDP);
-      } else if (fiscalRegime === 'elevated') {
-        // Blend: lerp from policy deficit to total deficit across 6-8% range
-        const blendFactor = (deficitPctGDP - 6) / 2; // 0 at 6%, 1 at 8%
-        const policyContrib = Math.max(0, policyDeficitPctGDP) * (1 - blendFactor);
-        const totalContrib = deficitPctGDP * blendFactor;
-        deficitPctForPressure = policyContrib + totalContrib;
-      } else {
-        // Stressed/Dominance: Full total deficit
-        deficitPctForPressure = deficitPctGDP;
+      // Incremental deficit = how much the policy package adds to deficit
+      // (negative if policies reduce deficit)
+      const incrementalDeficitPctGDP = Math.max(0, policyDeficitPctGDP); // Only expansionary pressure
+      
+      // In crisis regimes, the SENSITIVITY to incremental deficit is higher
+      // (because the economy is already strained), but we don't add baseline
+      let regimeMultiplier = 1.0;
+      if (fiscalRegime === 'elevated') {
+        // Elevated: slight amplification (1.0 to 1.3)
+        const elevatedProgress = (deficitPctGDP - 6) / 2;
+        regimeMultiplier = 1.0 + elevatedProgress * 0.3;
+      } else if (fiscalRegime === 'stressed') {
+        // Stressed: more amplification (1.3 to 1.6)
+        const stressProgress = (deficitPctGDP - 8) / 2;
+        regimeMultiplier = 1.3 + stressProgress * 0.3;
+      } else if (fiscalRegime === 'dominance') {
+        // Dominance: significant amplification (1.6 to 2.0)
+        const dominanceDepth = Math.min(5, deficitPctGDP - modelParams.fiscalDominanceThreshold);
+        regimeMultiplier = 1.6 + dominanceDepth * 0.08;
       }
+      
+      const deficitPctForPressure = incrementalDeficitPctGDP * regimeMultiplier;
       
       const rawPressure = deficitPctForPressure * deficitToInflationElasticity * slackMultiplier;
       
@@ -990,7 +1002,10 @@ const liberalPolicies = [
         totalDeficit: totalDeficit,
         deficitPctGDP: deficitPctGDP,
         policyDeficitPctGDP: policyDeficitPctGDP,
+        baselineDeficitPctGDP: baselineDeficitPctGDP,
+        incrementalDeficitPctGDP: incrementalDeficitPctGDP,
         fiscalRegime: fiscalRegime,
+        regimeMultiplier: regimeMultiplier,
         deficitPctForPressure: deficitPctForPressure,
         deficitToInflationElasticity: deficitToInflationElasticity,
         rawPressure: rawPressure,
