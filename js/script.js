@@ -583,6 +583,81 @@ const liberalPolicies = [
           ],
           notes: 'Exemptions for food, housing, healthcare, and childcare reduce regressivity and fertility drag. US is only OECD country without national VAT.'
         }
+      },
+      { 
+        id: 'stepped-up-basis', 
+        name: 'End Stepped-Up Basis', 
+        description: 'Tax capital gains at death instead of resetting basis.', 
+        savingsLow: 45, savingsHigh: 57, 
+        enabled: false,
+        threshold: 1000, // $1M exemption default (per person)
+        thresholdMin: 0,
+        thresholdMax: 5000,
+        thresholdLabel: 'Exemption per person ($k)',
+        gdpDrag: -0.001, // Slight GDP INCREASE (lock-in reduction)
+        tfrDrag: 0.001, // Minimal TFR impact - affects elderly estates
+        dragRationale: 'Neutral to positive GDP: reduces lock-in distortion, improves capital allocation',
+        confidence: 'medium-high',
+        methodology: {
+          derivation: 'When someone dies holding appreciated assets, cost basis "steps up" to market value—the "Angel of Death" loophole. Eliminating this raises $50-57B/yr (tax at death) or $20-25B/yr (carryover basis). GDP effect neutral to positive: lock-in reduction improves capital allocation. TFR impact minimal—affects estates at death, not young families.',
+          sources: [
+            { cite: 'CBO (2024)', finding: 'Tax at death = ~$536B/decade; carryover = ~$200B/decade', elasticity: 'Well-established scoring' },
+            { cite: 'Gale, Hall & Sabelhaus (2024)', finding: 'Brookings: "Would make the economy more efficient"', elasticity: 'Positive efficiency' },
+            { cite: 'Agersnap & Zidar (2021)', finding: 'Long-run realization elasticity', elasticity: '-0.3 to -0.5' },
+            { cite: 'Poterba & Weisbenner (2001)', finding: 'Stepped-up basis worth ~$40B annually', elasticity: 'Original estimates' }
+          ],
+          notes: 'Implementation straightforward. 56% of benefit goes to top quintile, 18% to top 1%. Main concern: liquidity for illiquid estates (farms, businesses). Biden proposal exempted $1M/person + primary residence.'
+        }
+      },
+      { 
+        id: 'land-value-tax', 
+        name: 'Land Value Tax', 
+        description: 'Tax unimproved land value. Economists\' "ideal tax."', 
+        savingsLow: 300, savingsHigh: 500, 
+        enabled: false,
+        threshold: 100, // 1.0% rate default (stored as basis points)
+        thresholdMin: 25,
+        thresholdMax: 200,
+        thresholdLabel: 'Annual rate (basis points)',
+        gdpDrag: -0.002, // GDP INCREASE (rare "free lunch")
+        tfrDrag: -0.004, // Slight TFR BENEFIT (lower housing costs)
+        dragRationale: 'GDP INCREASES: Land supply is fixed, so no deadweight loss. Reduces speculation, encourages productive use.',
+        confidence: 'low-medium',
+        methodology: {
+          derivation: 'Land is fixed in supply—taxing it causes no deadweight loss. Milton Friedman called it "the least bad tax." Stiglitz (2025) shows LVT can increase growth by discouraging land speculation. Revenue highly uncertain: 1% rate on ~$25T land base = ~$250-500B. TFR slightly positive: lower land prices help young families afford housing.',
+          sources: [
+            { cite: 'Stiglitz (1977)', finding: 'Henry George Theorem: LVT can fund public goods optimally', elasticity: 'Theoretically perfect' },
+            { cite: 'Stiglitz (2025)', finding: 'LVT increases growth rate via reduced speculation', elasticity: 'Positive GDP effect' },
+            { cite: 'Oates & Schwab (1997)', finding: 'Pittsburgh two-rate tax increased building activity', elasticity: 'Empirical support' },
+            { cite: 'IMF (2022)', finding: '"Land value taxation... can even be productive because it encourages development"', elasticity: 'Institutional endorsement' }
+          ],
+          notes: 'HIGH UNCERTAINTY: ±50% on revenue. Implementation challenges severe: valuation difficulty, political resistance, liquidity concerns, possible constitutional issues (apportionment). No federal-level experience anywhere. Theoretical case is bulletproof but practical application untested at scale.'
+        }
+      },
+      { 
+        id: 'income-tax-all', 
+        name: 'Income Tax Increase (All Brackets)', 
+        description: 'Raise rates across all 7 income brackets.', 
+        savingsLow: 100, savingsHigh: 130, 
+        enabled: false,
+        threshold: 1, // 1 percentage point default
+        thresholdMin: 1,
+        thresholdMax: 5,
+        thresholdLabel: 'Rate increase (pp)',
+        gdpDrag: 0.0006, // 0.06% GDP per pp
+        tfrDrag: 0.009, // Higher TFR drag - hits family-formation ages
+        dragRationale: 'Labor supply reduction; hits middle class where most childbearing occurs',
+        confidence: 'high',
+        methodology: {
+          derivation: '+1pp across all brackets raises ~$110-120B/yr. GDP drag ~0.06% per pp from labor supply response (ETI ~0.25). TFR drag higher than top-bracket-only: broad increase reduces disposable income for middle-income families where most childbearing occurs.',
+          sources: [
+            { cite: 'CBO (2024)', finding: '+1pp all brackets = $1.1-1.2T/decade', elasticity: 'Official scoring' },
+            { cite: 'Saez, Slemrod & Giertz (2012)', finding: 'Elasticity of taxable income meta-analysis', elasticity: 'ETI ~0.25' },
+            { cite: 'Romer & Romer (2010)', finding: 'Tax multiplier of 2-3', elasticity: 'For unexpected changes' },
+            { cite: 'Tax Foundation (2025)', finding: 'TCJA extension analysis', elasticity: 'Reversing cuts = 0.5-0.7% GDP loss' }
+          ],
+          notes: 'Most direct revenue lever. CBO/JCT score routinely—high confidence. ETI higher for top earners (~0.4), lower for middle class (~0.1-0.2). A +2pp increase is roughly proportional, not progressive.'
+        }
       }
     ];
 
@@ -2133,7 +2208,7 @@ const liberalPolicies = [
                 <span class="policy-title" data-flip="true">${tax.name}</span>
                 <div class="policy-stats">
                   <span class="policy-stat cost tax-cost">$${savingsMid}B/yr</span>
-                  <span class="policy-stat drag tax-drag">−${tax.tfrDrag.toFixed(2)} TFR</span>
+                  <span class="policy-stat drag tax-drag" ${tax.tfrDrag < 0 ? 'style="color:#7cb342"' : ''}>${tax.tfrDrag < 0 ? '+' : '−'}${Math.abs(tax.tfrDrag).toFixed(2)} TFR</span>
                 </div>
               </div>
               <p class="policy-description">${tax.description} <em style="color:#5d4037;">(${tax.dragRationale})</em></p>
@@ -2227,7 +2302,10 @@ const liberalPolicies = [
                              tax.id === 'financial-transaction' ? 60 :
                              tax.id === 'estate-tax' ? 40 :
                              tax.id === 'carbon-tax' ? 80 :
-                             tax.id === 'vat' ? 400 : 50;
+                             tax.id === 'vat' ? 400 :
+                             tax.id === 'stepped-up-basis' ? 45 :
+                             tax.id === 'land-value-tax' ? 300 :
+                             tax.id === 'income-tax-all' ? 100 : 50;
       
       const baseRevenueHigh = tax.id === 'income-tax-top' ? 120 :
                               tax.id === 'corporate-tax' ? 150 :
@@ -2235,7 +2313,10 @@ const liberalPolicies = [
                               tax.id === 'financial-transaction' ? 100 :
                               tax.id === 'estate-tax' ? 70 :
                               tax.id === 'carbon-tax' ? 120 :
-                              tax.id === 'vat' ? 600 : 75;
+                              tax.id === 'vat' ? 600 :
+                              tax.id === 'stepped-up-basis' ? 57 :
+                              tax.id === 'land-value-tax' ? 500 :
+                              tax.id === 'income-tax-all' ? 130 : 75;
 
       // Base TFR drags (at default threshold)
       const baseTfrDrag = tax.id === 'income-tax-top' ? 0.01 :
@@ -2244,7 +2325,10 @@ const liberalPolicies = [
                        tax.id === 'financial-transaction' ? 0.02 :
                        tax.id === 'estate-tax' ? 0.01 :
                        tax.id === 'carbon-tax' ? 0.025 :
-                       tax.id === 'vat' ? 0.02 : 0.01;
+                       tax.id === 'vat' ? 0.02 :
+                       tax.id === 'stepped-up-basis' ? 0.001 :
+                       tax.id === 'land-value-tax' ? -0.004 : // POSITIVE for TFR
+                       tax.id === 'income-tax-all' ? 0.009 : 0.01;
 
       // Base GDP drags (at default threshold)
       const baseGdpDrag = tax.id === 'income-tax-top' ? 0.002 :
@@ -2253,7 +2337,10 @@ const liberalPolicies = [
                        tax.id === 'financial-transaction' ? 0.002 :
                        tax.id === 'estate-tax' ? 0.001 :
                        tax.id === 'carbon-tax' ? 0.005 :
-                       tax.id === 'vat' ? 0.001 : 0.001;
+                       tax.id === 'vat' ? 0.001 :
+                       tax.id === 'stepped-up-basis' ? -0.001 : // POSITIVE for GDP
+                       tax.id === 'land-value-tax' ? -0.002 : // POSITIVE for GDP
+                       tax.id === 'income-tax-all' ? 0.0006 : 0.001;
 
       // Calculate multiplier based on threshold vs default
       let multiplier = 1;
@@ -2295,6 +2382,25 @@ const liberalPolicies = [
         // 10% is base
         multiplier = tax.threshold / 10;
         dragMultiplier = multiplier;
+      } else if (tax.id === 'stepped-up-basis') {
+        // Higher exemption = less revenue
+        // $1M exemption is base; $0 exemption = max revenue, $5M = minimal
+        const exemptionFactor = Math.max(0.4, 1 - (tax.threshold / 5000) * 0.6);
+        multiplier = exemptionFactor;
+        dragMultiplier = exemptionFactor;
+      } else if (tax.id === 'land-value-tax') {
+        // Higher rate = more revenue (stored as basis points, 100 = 1%)
+        // 100bp (1%) is base
+        const ratePercent = tax.threshold / 100;
+        const behavioralFactor = 1 - 0.05 * ratePercent; // slight base erosion at high rates
+        multiplier = ratePercent * behavioralFactor;
+        dragMultiplier = ratePercent;
+      } else if (tax.id === 'income-tax-all') {
+        // Higher pp increase = more revenue and more drag
+        // 1pp is base
+        const behavioralFactor = 1 - 0.03 * tax.threshold; // ETI response
+        multiplier = tax.threshold * behavioralFactor;
+        dragMultiplier = tax.threshold;
       }
 
       // Clamp multipliers to prevent negative/NaN values
@@ -2310,7 +2416,16 @@ const liberalPolicies = [
 
       // Update the displayed stats
       if (costStat) costStat.textContent = `$${Math.round((tax.savingsLow + tax.savingsHigh) / 2)}B/yr`;
-      if (dragStat) dragStat.textContent = `−${tax.tfrDrag.toFixed(2)} TFR`;
+      if (dragStat) {
+        if (tax.tfrDrag < 0) {
+          // Positive effect (negative drag)
+          dragStat.textContent = `+${Math.abs(tax.tfrDrag).toFixed(2)} TFR`;
+          dragStat.style.color = '#7cb342';
+        } else {
+          dragStat.textContent = `−${tax.tfrDrag.toFixed(2)} TFR`;
+          dragStat.style.color = '';
+        }
+      }
     }
 
     function renderModelParams(container) {
