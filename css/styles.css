@@ -128,23 +128,45 @@
       gap: 16px;
       justify-content: space-between;
       overflow: visible;
+      flex-wrap: wrap;
     }
 
     .fiscal-item { text-align: center; flex: 1; min-width: 0; }
 
-    @media (max-width: 400px) {
+    @media (max-width: 600px) {
       .fiscal-strip {
-        gap: 8px;
+        gap: 8px 12px;
+        justify-content: flex-start;
       }
       .fiscal-item {
-        min-width: 50px;
-        flex: none;
+        min-width: 60px;
+        flex: 0 0 auto;
       }
       .fiscal-value {
-        font-size: 0.85rem;
+        font-size: 0.9rem;
       }
       .fiscal-label {
         font-size: 8px;
+        letter-spacing: 0.5px;
+      }
+      /* Hide GDP/cap on small screens - less critical */
+      .fiscal-item:nth-child(6) {
+        display: none;
+      }
+    }
+
+    @media (max-width: 400px) {
+      .fiscal-strip {
+        gap: 6px 10px;
+      }
+      .fiscal-item {
+        min-width: 55px;
+      }
+      .fiscal-value {
+        font-size: 0.8rem;
+      }
+      .fiscal-label {
+        font-size: 7px;
       }
     }
 
@@ -197,6 +219,27 @@
       max-width: 80px;
       line-height: 1.2;
       opacity: 1 !important;
+    }
+
+    @media (max-width: 600px) {
+      .feasibility-header-item {
+        min-width: 55px;
+      }
+      .feasibility-warning {
+        font-size: 7px !important;
+        max-width: 60px;
+      }
+    }
+
+    /* Hide less critical items on very small screens */
+    .hide-mobile {
+      display: block;
+    }
+    
+    @media (max-width: 500px) {
+      .hide-mobile {
+        display: none !important;
+      }
     }
 
     .gdp-projection {
