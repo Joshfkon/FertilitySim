@@ -4381,8 +4381,8 @@ const liberalPolicies = [
         liberalPolicies.forEach((p, idx) => {
           if (p.enabled) {
             lpBits |= (1 << idx);
-            if (p.intensity !== 1) {
-              intensities.push(`${idx.toString(36)}${Math.round(p.intensity * 10).toString(36)}`);
+            if (p.intensity !== 100) {
+              intensities.push(`${idx.toString(36)}${Math.round(p.intensity / 10).toString(36)}`);
             }
           }
         });
@@ -4457,7 +4457,7 @@ const liberalPolicies = [
               // Parse intensity pairs (single char idx + single char intensity)
               while (pos < encoded.length && /[0-9a-z]/.test(encoded[pos]) && !'ieptm'.includes(encoded[pos])) {
                 const idx = parseInt(encoded[pos], 36);
-                const int = parseInt(encoded[pos + 1], 36) / 10;
+                const int = parseInt(encoded[pos + 1], 36) * 10;
                 intensityMap[idx] = int;
                 pos += 2;
               }
@@ -4465,7 +4465,7 @@ const liberalPolicies = [
             
             liberalPolicies.forEach((p, idx) => {
               if (bits & (1 << idx)) {
-                state.lp.push({ i: p.id, n: intensityMap[idx] || 1 });
+                state.lp.push({ i: p.id, n: intensityMap[idx] || 100 });
               }
             });
           } else if (type === 'i') {
@@ -4580,7 +4580,7 @@ const liberalPolicies = [
     // Apply decoded state to the app
     function applySharedState(state) {
       // Reset all policies first
-      liberalPolicies.forEach(p => { p.enabled = false; p.intensity = 1; });
+      liberalPolicies.forEach(p => { p.enabled = false; p.intensity = 100; });
       illiberalPolicies.forEach(p => { p.enabled = false; });
       entitlementReforms.forEach(r => { r.enabled = false; });
       taxIncreases.forEach(t => { t.enabled = false; });
@@ -4591,7 +4591,7 @@ const liberalPolicies = [
           const policy = liberalPolicies.find(p => p.id === saved.i);
           if (policy) {
             policy.enabled = true;
-            policy.intensity = saved.n || 1;
+            policy.intensity = saved.n || 100;
           }
         });
       }
