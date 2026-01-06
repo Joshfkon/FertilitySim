@@ -3304,9 +3304,21 @@ const liberalPolicies = [
             valueEl.textContent = ctrl.format ? ctrl.format(newValue) : `${newValue}${ctrl.unit}`;
           }
           
+          // Debug: log current params
+          console.log('Slider changed:', ctrl.id, '=', params[ctrl.id]);
+          console.log('All params:', JSON.stringify(immigrationConfig.params.current));
+          
           updateCompositionBar();
           updateImmigrationDisplay();
           updateDisplay();
+          
+          // Debug: verify impacts are being calculated
+          const testImpacts = calculateImmigrationImpacts();
+          console.log('Current impacts:', {
+            fiscalNPV: testImpacts.fiscalNPV,
+            gdpEffect: testImpacts.gdpEffect,
+            tfrEffect: testImpacts.tfrEffect
+          });
         });
       });
     }
@@ -3341,7 +3353,10 @@ const liberalPolicies = [
     }
 
     function updateImmigrationDisplay() {
+      console.log('updateImmigrationDisplay called');
+      console.log('Current params.current:', JSON.stringify(immigrationConfig.params.current));
       const impacts = calculateImmigrationImpacts();
+      console.log('Calculated impacts:', impacts.fiscalNPV, impacts.gdpEffect);
       
       // Update level display
       const levelDisplay = document.getElementById('immigration-level-display');
