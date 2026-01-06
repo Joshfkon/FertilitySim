@@ -1331,15 +1331,16 @@ const liberalPolicies = [
       const savedCurrentParams = { ...immigrationConfig.params.current };
       
       // Set to baseline: 1M/yr with current system at default params
+      // IMPORTANT: Modify in place to preserve object reference for event handlers
       immigrationConfig.annualLevel = 1000;
       immigrationConfig.selectionMechanism = 'current';
-      immigrationConfig.params.current = { family: 66, employment: 15, diversity: 5, refugee: 14 };
+      Object.assign(immigrationConfig.params.current, { family: 66, employment: 15, diversity: 5, refugee: 14 });
       const baselineImpacts = calculateImmigrationImpacts();
       
-      // Restore current settings
+      // Restore current settings (modify in place)
       immigrationConfig.annualLevel = savedLevel;
       immigrationConfig.selectionMechanism = savedMech;
-      immigrationConfig.params.current = savedCurrentParams;
+      Object.assign(immigrationConfig.params.current, savedCurrentParams);
       const currentImpacts = calculateImmigrationImpacts();
       
       // Calculate per-immigrant fiscal for both (including gen2)
@@ -3304,21 +3305,9 @@ const liberalPolicies = [
             valueEl.textContent = ctrl.format ? ctrl.format(newValue) : `${newValue}${ctrl.unit}`;
           }
           
-          // Debug: log current params
-          console.log('Slider changed:', ctrl.id, '=', params[ctrl.id]);
-          console.log('All params:', JSON.stringify(immigrationConfig.params.current));
-          
           updateCompositionBar();
           updateImmigrationDisplay();
           updateDisplay();
-          
-          // Debug: verify impacts are being calculated
-          const testImpacts = calculateImmigrationImpacts();
-          console.log('Current impacts:', {
-            fiscalNPV: testImpacts.fiscalNPV,
-            gdpEffect: testImpacts.gdpEffect,
-            tfrEffect: testImpacts.tfrEffect
-          });
         });
       });
     }
@@ -3353,10 +3342,7 @@ const liberalPolicies = [
     }
 
     function updateImmigrationDisplay() {
-      console.log('updateImmigrationDisplay called');
-      console.log('Current params.current:', JSON.stringify(immigrationConfig.params.current));
       const impacts = calculateImmigrationImpacts();
-      console.log('Calculated impacts:', impacts.fiscalNPV, impacts.gdpEffect);
       
       // Update level display
       const levelDisplay = document.getElementById('immigration-level-display');
@@ -3418,14 +3404,16 @@ const liberalPolicies = [
         const savedMech = immigrationConfig.selectionMechanism;
         const savedCurrentParams = {...immigrationConfig.params.current};
         
+        // IMPORTANT: Modify in place to preserve object reference for event handlers
         immigrationConfig.annualLevel = 1000;
         immigrationConfig.selectionMechanism = 'current';
-        immigrationConfig.params.current = { family: 66, employment: 15, diversity: 5, refugee: 14 };
+        Object.assign(immigrationConfig.params.current, { family: 66, employment: 15, diversity: 5, refugee: 14 });
         const baselineImpacts = calculateImmigrationImpacts();
         
+        // Restore (modify in place)
         immigrationConfig.annualLevel = savedLevel;
         immigrationConfig.selectionMechanism = savedMech;
-        immigrationConfig.params.current = savedCurrentParams;
+        Object.assign(immigrationConfig.params.current, savedCurrentParams);
         
         const marginalGdpEffect = impacts.gdpEffect - baselineImpacts.gdpEffect;
         
