@@ -355,6 +355,7 @@
       margin-top: 10px;
       flex-wrap: wrap;
       position: relative;
+      z-index: 1; /* Keep below methodology popups */
       z-index: 10;
     }
 
@@ -977,6 +978,8 @@
       font-family: 'JetBrains Mono', monospace;
       font-size: 11px;
       margin-right: 8px;
+      position: relative;
+      z-index: 1; /* Keep below popups (z-index 2100) */
     }
 
     .inflation-rate-badge.visible {
