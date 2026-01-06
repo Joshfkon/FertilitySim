@@ -3878,9 +3878,6 @@ const liberalPolicies = [
       if (totalPolicies <= 3 && totalPolicies > 0) {
         score += 8;
         factors.push({ label: 'Simple package', impact: +8, class: 'positive' });
-      } else if (totalPolicies > 8) {
-        score -= 10;
-        factors.push({ label: 'Complex package', impact: -10, class: 'negative' });
       }
       
       // Clamp score
