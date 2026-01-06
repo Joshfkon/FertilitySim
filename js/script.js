@@ -3650,32 +3650,101 @@ const liberalPolicies = [
         }
       });
 
+      // Generate Wordle-style share text
+      function generateShareText() {
+        const tfr = calculateTFR();
+        const fiscal = calculateFiscal();
+        const feasibility = calculateFeasibility();
+        const entitlementSavings = calculateEntitlementSavings();
+        const gdp2075 = calculateGDP2075(tfr.mid, tfr.gdpDrag, entitlementSavings, tfr.spending, tfr.offsets);
+        const type = document.getElementById('share-type-title').textContent;
+        const icon = document.getElementById('share-type-icon').textContent;
+        
+        // TFR progress bar (10 blocks, target is 2.1)
+        const tfrProgress = Math.min(10, Math.round((tfr.mid / 2.1) * 10));
+        const tfrBar = [];
+        for (let i = 0; i < 10; i++) {
+          if (i < tfrProgress) {
+            if (tfr.mid >= 2.1) tfrBar.push('🟩');
+            else if (tfr.mid >= 1.8) tfrBar.push('🟨');
+            else tfrBar.push('🟥');
+          } else {
+            tfrBar.push('⬜');
+          }
+        }
+        
+        // Fiscal indicator
+        const fiscalEmoji = fiscal.net <= 0 ? '💰' : fiscal.net < 200 ? '📊' : '🔥';
+        const fiscalText = fiscal.net <= 0 ? `+$${Math.abs(Math.round(fiscal.net))}B` : `-$${Math.round(fiscal.net)}B`;
+        
+        // Feasibility grade emoji
+        const gradeEmoji = { 'A': '🅰️', 'B': '🅱️', 'C': '©️', 'D': '🇩', 'F': '🚫' }[feasibility.grade] || '❓';
+        
+        // Policy counts
+        const policyCount = [...liberalPolicies, ...illiberalPolicies].filter(p => p.enabled).length;
+        const entitlementCount = entitlementReforms.filter(r => r.enabled).length;
+        const taxCount = taxIncreases.filter(t => t.enabled).length;
+        
+        // Immigration
+        const immLevel = immigrationConfig.annualLevel >= 1000 
+          ? `${(immigrationConfig.annualLevel/1000).toFixed(1)}M` 
+          : `${immigrationConfig.annualLevel}k`;
+        
+        // Build the share text
+        let text = `🍼 Fertility Policy Simulator\n\n`;
+        text += `${icon} ${type}\n\n`;
+        text += `📈 TFR: ${tfr.mid.toFixed(2)}\n`;
+        text += `${tfrBar.join('')}\n\n`;
+        text += `${fiscalEmoji} Fiscal: ${fiscalText}\n`;
+        text += `🏛️ Feasibility: ${feasibility.grade}\n`;
+        text += `💵 GDP 2075: $${gdp2075.toFixed(0)}T\n\n`;
+        
+        // Policy summary
+        const parts = [];
+        if (policyCount > 0) parts.push(`${policyCount} policies`);
+        if (taxCount > 0) parts.push(`${taxCount} taxes`);
+        if (entitlementCount > 0) parts.push(`${entitlementCount} reforms`);
+        parts.push(`${immLevel}/yr immigration`);
+        text += `${parts.join(' • ')}\n\n`;
+        text += `tfrsim.com`;
+        
+        return text;
+      }
+      
       shareX.addEventListener('click', () => {
+        const text = generateShareText();
+        const url = 'https://tfrsim.com';
+        // For Twitter, use a shorter version
         const tfr = calculateTFR();
         const type = document.getElementById('share-type-title').textContent;
-        const immLevel = immigrationConfig.annualLevel >= 1000 ? `${(immigrationConfig.annualLevel/1000).toFixed(1)}M` : `${immigrationConfig.annualLevel}k`;
-        const text = `I'm "${type}" in the Fertility Policy Simulator! TFR ${tfr.mid.toFixed(2)} with ${immLevel}/yr immigration. Can you do better?`;
-        const url = 'https://tfrsim.com';
-        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
+        const icon = document.getElementById('share-type-icon').textContent;
+        const tfrProgress = Math.min(10, Math.round((tfr.mid / 2.1) * 10));
+        const tfrBar = [];
+        for (let i = 0; i < 10; i++) {
+          if (i < tfrProgress) {
+            if (tfr.mid >= 2.1) tfrBar.push('🟩');
+            else if (tfr.mid >= 1.8) tfrBar.push('🟨');
+            else tfrBar.push('🟥');
+          } else {
+            tfrBar.push('⬜');
+          }
+        }
+        const twitterText = `🍼 Fertility Policy Simulator\n\n${icon} ${type}\n📈 TFR: ${tfr.mid.toFixed(2)}\n${tfrBar.join('')}\n\nCan you hit 2.1?`;
+        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(twitterText)}&url=${encodeURIComponent(url)}`, '_blank');
       });
 
       shareCopy.addEventListener('click', () => {
-        const tfr = calculateTFR();
-        const type = document.getElementById('share-type-title').textContent;
-        const immLevel = immigrationConfig.annualLevel >= 1000 ? `${(immigrationConfig.annualLevel/1000).toFixed(1)}M` : `${immigrationConfig.annualLevel}k`;
-        const mechNames = { current: 'current system', points: 'points-based', employment: 'employment-based', family: 'family-focused', diversity: 'diversity lottery' };
-        const text = `Fertility Policy Simulator: I'm "${type}" with TFR ${tfr.mid.toFixed(2)}, ${immLevel}/yr immigration (${mechNames[immigrationConfig.selectionMechanism]}). Try it: https://tfrsim.com`;
+        const text = generateShareText();
         
         if (navigator.clipboard && window.isSecureContext) {
           navigator.clipboard.writeText(text).then(() => {
             copiedMsg.classList.add('visible');
             setTimeout(() => copiedMsg.classList.remove('visible'), 2000);
           }).catch(() => {
-            prompt('Copy this link:', text);
+            prompt('Copy this text:', text);
           });
         } else {
-          // Fallback for non-secure contexts
-          prompt('Copy this link:', text);
+          prompt('Copy this text:', text);
         }
       });
     }
