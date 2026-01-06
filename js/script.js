@@ -2002,6 +2002,30 @@ const liberalPolicies = [
         toggleLabel.textContent = policy.enabled ? 'Enabled' : 'Disabled';
         updateDisplay();
       });
+      
+      // Initialize UI from loaded state
+      if (policy.enabled) {
+        toggle.checked = true;
+        policyCard.classList.add('enabled');
+        sliderRow.classList.remove('hidden');
+        toggleLabel.textContent = 'Enabled';
+      }
+      if (policy.intensity !== undefined && policy.intensity !== 100) {
+        // Reverse-calculate slider value from intensity
+        const ratio = policy.intensity / 100;
+        let sliderVal;
+        if (sc.invert) {
+          const minRatio = 0.25;
+          const maxRatio = 1.25;
+          const t = (ratio - maxRatio) / (minRatio - maxRatio);
+          sliderVal = Math.round(sc.min + t * (sc.max - sc.min));
+        } else {
+          sliderVal = Math.round(ratio * sc.default);
+        }
+        sliderVal = Math.max(sc.min, Math.min(sc.max, sliderVal));
+        slider.value = sliderVal;
+        sliderValueEl.textContent = sc.format(sliderVal);
+      }
 
       slider.addEventListener('input', () => {
         const val = parseInt(slider.value);
@@ -2140,6 +2164,18 @@ const liberalPolicies = [
         toggleLabel.textContent = reform.enabled ? 'Enabled' : 'Disabled';
         updateDisplay();
       });
+      
+      // Initialize UI from loaded state
+      if (reform.enabled) {
+        toggle.checked = true;
+        card.classList.add('enabled');
+        if (sliderRow) sliderRow.classList.remove('hidden');
+        toggleLabel.textContent = 'Enabled';
+      }
+      if (reform.threshold !== undefined && slider && sc) {
+        slider.value = reform.threshold;
+        sliderValueEl.textContent = sc.format(reform.threshold);
+      }
 
       if (slider && sc) {
         slider.addEventListener('input', () => {
@@ -2332,6 +2368,18 @@ const liberalPolicies = [
         updateTaxRevenue(tax, costStat, dragStat);
         updateDisplay();
       });
+      
+      // Initialize UI from loaded state
+      if (tax.enabled) {
+        toggle.checked = true;
+        policyCard.classList.add('enabled');
+        thresholdRow.classList.remove('hidden');
+        toggleLabel.textContent = 'Enabled';
+      }
+      if (tax.threshold !== undefined) {
+        thresholdSlider.value = tax.threshold;
+        thresholdValue.textContent = formatThreshold(tax.threshold);
+      }
 
       // Initialize tax revenue display with threshold-adjusted values
       updateTaxRevenue(tax, costStat, dragStat);
