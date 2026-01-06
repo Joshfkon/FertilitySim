@@ -3426,14 +3426,14 @@ const liberalPolicies = [
         const tfr = calculateTFR();
         const type = document.getElementById('share-type-title').textContent;
         const text = `I'm "${type}" in the Fertility Policy Simulator! My package achieves TFR ${tfr.mid.toFixed(2)}. Can you do better?`;
-        const url = 'https://joshfkon.github.io/LifeAppGame/';
+        const url = 'https://tfrsim.com';
         window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
       });
 
       shareCopy.addEventListener('click', () => {
         const tfr = calculateTFR();
         const type = document.getElementById('share-type-title').textContent;
-        const text = `Fertility Policy Simulator: I'm "${type}" with TFR ${tfr.mid.toFixed(2)}. Try it: https://joshfkon.github.io/LifeAppGame/`;
+        const text = `Fertility Policy Simulator: I'm "${type}" with TFR ${tfr.mid.toFixed(2)}. Try it: https://tfrsim.com`;
         
         if (navigator.clipboard && window.isSecureContext) {
           navigator.clipboard.writeText(text).then(() => {
