@@ -3469,6 +3469,8 @@ const liberalPolicies = [
       const taxCount = taxes;
       const gdpBaseline = 75; // $75T baseline
       const gdpChange = ((gdp2075 - gdpBaseline) / gdpBaseline) * 100; // % change
+      const economyCrashed = gdpChange <= -15;
+      const economyTanked = gdpChange <= -8;
       
       // Check which illiberal policies are enabled
       const hardAuthoritarian = illiberalPolicies.filter(p => 
@@ -3483,70 +3485,79 @@ const liberalPolicies = [
 
       // Personality types based on choices
       if (policyCount === 0 && entitlementCount === 0 && taxCount === 0 && !anyIlliberal) {
-        return { icon: '🤷', title: 'The Spectator', desc: 'You\'re still exploring the options. Try enabling some policies!' };
+        return { icon: '🤷', title: 'The Spectator', desc: 'You\'re still exploring the options. Try enabling some policies!', crashed: false };
+      }
+      
+      // ECONOMY CRASHERS - check early
+      if (economyCrashed && tfrMid < 2.0) {
+        return { icon: '💥', title: 'The Economy Crasher', desc: 'Congratulations, you\'ve created a depression. Fertility policies don\'t matter if everyone\'s broke.', crashed: true };
+      }
+      
+      if (economyCrashed && tfrMid >= 2.0) {
+        return { icon: '🔥', title: 'The Pyrrhic Victor', desc: 'Replacement fertility achieved... in the smoldering ruins of the economy. Was it worth it?', crashed: true };
       }
       
       if (hardAuthoritarian) {
-        return { icon: '⚔️', title: 'The Authoritarian', desc: 'You believe the ends justify the means. History will judge.' };
+        return { icon: '⚔️', title: 'The Authoritarian', desc: 'You believe the ends justify the means. History will judge.', crashed: economyCrashed };
       }
       
       if (softAuthoritarian && !hardAuthoritarian) {
-        return { icon: '🎭', title: 'The Soft Authoritarian', desc: 'Nudges with teeth. You prefer carrots and sticks over outright bans.' };
+        return { icon: '🎭', title: 'The Soft Authoritarian', desc: 'Nudges with teeth. You prefer carrots and sticks over outright bans.', crashed: economyCrashed };
       }
       
       // The Unicorn: Replacement fertility + fiscal balance + didn't tank growth
       // Check if achieved via entitlement reform or taxes
       if (tfrMid >= 2.1 && netFiscal <= 0 && gdpChange > -20) {
         if (entitlementCount >= 2 && taxCount >= 2) {
-          return { icon: '🏆', title: 'The Coalition Builder', desc: 'Holy grail achieved by making everyone equally unhappy. Seniors AND the rich? Bold.' };
+          return { icon: '🏆', title: 'The Coalition Builder', desc: 'Holy grail achieved by making everyone equally unhappy. Seniors AND the rich? Bold.', crashed: false };
         }
         if (entitlementCount >= 2) {
-          return { icon: '🏆', title: 'The Boomer Slayer', desc: 'Holy grail achieved... by raiding the AARP\'s lunch money. They\'ll remember this at the polls.' };
+          return { icon: '🏆', title: 'The Boomer Slayer', desc: 'Holy grail achieved... by raiding the AARP\'s lunch money. They\'ll remember this at the polls.', crashed: false };
         }
         if (taxCount >= 3) {
-          return { icon: '🏆', title: 'The Robin Hood', desc: 'Holy grail achieved by soaking the rich. The 1% sends their regards.' };
+          return { icon: '🏆', title: 'The Robin Hood', desc: 'Holy grail achieved by soaking the rich. The 1% sends their regards.', crashed: false };
         }
-        return { icon: '🏆', title: 'The Unicorn', desc: 'Replacement fertility AND fiscal balance AND growth? You found the holy grail.' };
+        return { icon: '🏆', title: 'The Unicorn', desc: 'Replacement fertility AND fiscal balance AND growth? You found the holy grail.', crashed: false };
       }
       
       // NEW: The Growth Sacrificer - got replacement + surplus but tanked GDP
       if (tfrMid >= 2.1 && netFiscal <= 0 && gdpChange <= -20) {
-        return { icon: '⚖️', title: 'The Growth Sacrificer', desc: 'Replacement fertility and fiscal surplus, but at what cost? GDP takes a hit.' };
+        return { icon: '⚖️', title: 'The Growth Sacrificer', desc: 'Replacement fertility and fiscal surplus, but at what cost? GDP takes a hit.', crashed: true };
       }
       
       if (tfrMid >= 2.1 && netFiscal > 500) {
-        return { icon: '💸', title: 'The MMT Maximalist', desc: 'Deficits are just numbers, right? Future generations can sort it out.' };
+        return { icon: '💸', title: 'The MMT Maximalist', desc: 'Deficits are just numbers, right? Future generations can sort it out.', crashed: economyTanked };
       }
       
       if (tfrMid >= 2.0 && entitlementCount >= 4) {
-        return { icon: '🗡️', title: 'The Intergenerational Warrior', desc: 'You\'re willing to take on the AARP. Respect.' };
+        return { icon: '🗡️', title: 'The Intergenerational Warrior', desc: 'You\'re willing to take on the AARP. Respect.', crashed: economyTanked };
       }
       
       if (taxCount >= 4 && entitlementCount === 0) {
-        return { icon: '🏛️', title: 'The Tax-and-Spend Liberal', desc: 'Soak the rich to save the future. Classic.' };
+        return { icon: '🏛️', title: 'The Tax-and-Spend Liberal', desc: 'Soak the rich to save the future. Classic.', crashed: economyTanked };
       }
       
       if (entitlementCount >= 4 && taxCount === 0) {
-        return { icon: '📉', title: 'The Entitlement Reformer', desc: 'You\'re betting seniors will accept less for the next generation.' };
+        return { icon: '📉', title: 'The Entitlement Reformer', desc: 'You\'re betting seniors will accept less for the next generation.', crashed: economyTanked };
       }
       
       if (tfrMid >= 1.9 && Math.abs(netFiscal) <= 100) {
-        return { icon: '🎯', title: 'The Pragmatist', desc: 'Meaningful impact without breaking the bank. Sensible.' };
+        return { icon: '🎯', title: 'The Pragmatist', desc: 'Meaningful impact without breaking the bank. Sensible.', crashed: economyTanked };
       }
       
       if (tfrMid < 1.75 && policyCount >= 3) {
-        return { icon: '😬', title: 'The Underfunder', desc: 'Good intentions, but you\'re not moving the needle much.' };
+        return { icon: '😬', title: 'The Underfunder', desc: 'Good intentions, but you\'re not moving the needle much.', crashed: economyTanked };
       }
       
       if (policyCount === 1 && entitlementCount === 0 && taxCount === 0) {
-        return { icon: '🌱', title: 'The Minimalist', desc: 'One small step. Maybe add some funding?' };
+        return { icon: '🌱', title: 'The Minimalist', desc: 'One small step. Maybe add some funding?', crashed: false };
       }
       
       if (netFiscal < -200) {
-        return { icon: '💰', title: 'The Surplus Builder', desc: 'More offsets than spending? Future generations thank you.' };
+        return { icon: '💰', title: 'The Surplus Builder', desc: 'More offsets than spending? Future generations thank you.', crashed: economyTanked };
       }
       
-      return { icon: '🔬', title: 'The Policy Wonk', desc: 'A thoughtful mix of interventions. Keep experimenting!' };
+      return { icon: '🔬', title: 'The Policy Wonk', desc: 'A thoughtful mix of interventions. Keep experimenting!', crashed: economyTanked };
     }
 
     function calculateFeasibility() {
@@ -3741,6 +3752,12 @@ const liberalPolicies = [
         const type = document.getElementById('share-type-title').textContent;
         const icon = document.getElementById('share-type-icon').textContent;
         
+        // Calculate GDP change
+        const gdpBaseline = 75;
+        const gdpChange = ((gdp2075 - gdpBaseline) / gdpBaseline) * 100;
+        const economyCrashed = gdpChange <= -15;
+        const economyTanked = gdpChange <= -8;
+        
         // TFR progress bar (10 blocks, target is 2.1)
         const tfrProgress = Math.min(10, Math.round((tfr.mid / 2.1) * 10));
         const tfrBar = [];
@@ -3758,6 +3775,16 @@ const liberalPolicies = [
         const fiscalEmoji = fiscal.net <= 0 ? '💰' : fiscal.net < 200 ? '📊' : '🔥';
         const fiscalText = fiscal.net <= 0 ? `+$${Math.abs(Math.round(fiscal.net))}B` : `-$${Math.round(fiscal.net)}B`;
         
+        // GDP indicator with crash warning
+        let gdpLine = `💵 GDP 2075: $${gdp2075.toFixed(0)}T`;
+        if (economyCrashed) {
+          gdpLine += ` 💥 CRASHED (${gdpChange.toFixed(0)}%)`;
+        } else if (economyTanked) {
+          gdpLine += ` ⚠️ (${gdpChange.toFixed(0)}%)`;
+        } else if (gdpChange > 0) {
+          gdpLine += ` (+${gdpChange.toFixed(0)}%)`;
+        }
+        
         // Feasibility grade emoji
         const gradeEmoji = { 'A': '🅰️', 'B': '🅱️', 'C': '©️', 'D': '🇩', 'F': '🚫' }[feasibility.grade] || '❓';
         
@@ -3773,12 +3800,14 @@ const liberalPolicies = [
         
         // Build the share text
         let text = `🍼 Fertility Policy Simulator\n\n`;
-        text += `${icon} ${type}\n\n`;
+        text += `${icon} ${type}`;
+        if (economyCrashed) text += ` 💥`;
+        text += `\n\n`;
         text += `📈 TFR: ${tfr.mid.toFixed(2)}\n`;
         text += `${tfrBar.join('')}\n\n`;
         text += `${fiscalEmoji} Fiscal: ${fiscalText}\n`;
         text += `🏛️ Feasibility: ${feasibility.grade}\n`;
-        text += `💵 GDP 2075: $${gdp2075.toFixed(0)}T\n\n`;
+        text += `${gdpLine}\n\n`;
         
         // Policy summary
         const parts = [];
