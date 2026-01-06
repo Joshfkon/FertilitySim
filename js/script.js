@@ -3641,7 +3641,8 @@ const liberalPolicies = [
       shareX.addEventListener('click', () => {
         const tfr = calculateTFR();
         const type = document.getElementById('share-type-title').textContent;
-        const text = `I'm "${type}" in the Fertility Policy Simulator! My package achieves TFR ${tfr.mid.toFixed(2)}. Can you do better?`;
+        const immLevel = immigrationConfig.annualLevel >= 1000 ? `${(immigrationConfig.annualLevel/1000).toFixed(1)}M` : `${immigrationConfig.annualLevel}k`;
+        const text = `I'm "${type}" in the Fertility Policy Simulator! TFR ${tfr.mid.toFixed(2)} with ${immLevel}/yr immigration. Can you do better?`;
         const url = 'https://tfrsim.com';
         window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
       });
@@ -3649,7 +3650,9 @@ const liberalPolicies = [
       shareCopy.addEventListener('click', () => {
         const tfr = calculateTFR();
         const type = document.getElementById('share-type-title').textContent;
-        const text = `Fertility Policy Simulator: I'm "${type}" with TFR ${tfr.mid.toFixed(2)}. Try it: https://tfrsim.com`;
+        const immLevel = immigrationConfig.annualLevel >= 1000 ? `${(immigrationConfig.annualLevel/1000).toFixed(1)}M` : `${immigrationConfig.annualLevel}k`;
+        const mechNames = { current: 'current system', points: 'points-based', employment: 'employment-based', family: 'family-focused', diversity: 'diversity lottery' };
+        const text = `Fertility Policy Simulator: I'm "${type}" with TFR ${tfr.mid.toFixed(2)}, ${immLevel}/yr immigration (${mechNames[immigrationConfig.selectionMechanism]}). Try it: https://tfrsim.com`;
         
         if (navigator.clipboard && window.isSecureContext) {
           navigator.clipboard.writeText(text).then(() => {
@@ -3722,12 +3725,20 @@ const liberalPolicies = [
         ).join('');
       }
       
-      // Add immigration changes if any
-      if (immigrationConfig.selectionMechanism !== 'current' || immigrationConfig.annualLevel !== 1000) {
-        const mechNames = { current: 'Current', points: 'Points', employment: 'H1B', family: 'Family', diversity: 'Diversity' };
-        const immDesc = `Immigration: ${immigrationConfig.annualLevel}k/yr ${mechNames[immigrationConfig.selectionMechanism]}`;
-        listEl.innerHTML += `<span class="share-policy-item immigration">${immDesc}</span>`;
-      }
+      // Always show immigration settings
+      const mechNames = { 
+        current: 'Current System', 
+        points: 'Points-Based', 
+        employment: 'Employment-Based', 
+        family: 'Family-Focused', 
+        diversity: 'Diversity Lottery' 
+      };
+      const levelChange = immigrationConfig.annualLevel - 1000;
+      const levelDesc = levelChange === 0 ? '1M/yr' : 
+                        levelChange > 0 ? `${(immigrationConfig.annualLevel/1000).toFixed(1)}M/yr (+${levelChange}k)` :
+                        `${(immigrationConfig.annualLevel/1000).toFixed(1)}M/yr (${levelChange}k)`;
+      const immDesc = `Immigration: ${levelDesc}, ${mechNames[immigrationConfig.selectionMechanism]}`;
+      listEl.innerHTML += `<span class="share-policy-item immigration">${immDesc}</span>`;
       
       // Calculate and display feasibility
       const feasibility = calculateFeasibility();
