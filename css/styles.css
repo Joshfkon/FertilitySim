@@ -278,10 +278,11 @@
       background: var(--paper);
       color: var(--ink);
       border: 1px solid var(--ink);
-      z-index: 2001;
+      z-index: 2100;
       box-shadow: 0 8px 40px rgba(0,0,0,0.3);
       max-height: 80vh;
       overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
 
     .gdp-methodology.visible {
@@ -492,10 +493,11 @@
       background: var(--paper);
       color: var(--ink);
       border: 1px solid var(--ink);
-      z-index: 2001;
+      z-index: 2100;
       box-shadow: 0 8px 40px rgba(0,0,0,0.3);
       max-height: 80vh;
       overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
 
     .penalty-methodology.visible {
@@ -694,9 +696,10 @@
         transform: translateY(-50%);
         width: auto;
         max-width: none;
-        max-height: 80vh;
+        max-height: 75vh;
         overflow-y: auto;
-        z-index: 2001;
+        -webkit-overflow-scrolling: touch;
+        z-index: 2100;
         box-shadow: 0 8px 40px rgba(0,0,0,0.4);
       }
       
@@ -711,7 +714,8 @@
         max-width: none;
         max-height: 70vh;
         overflow-y: auto;
-        z-index: 2001;
+        -webkit-overflow-scrolling: touch;
+        z-index: 2100;
         box-shadow: 0 8px 40px rgba(0,0,0,0.4);
       }
     }
@@ -724,8 +728,8 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(0,0,0,0.6);
-      z-index: 2000;
+      background: rgba(0,0,0,0.5);
+      z-index: 2050;
     }
     
     .methodology-backdrop.visible {
