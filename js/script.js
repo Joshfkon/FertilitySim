@@ -3271,16 +3271,26 @@ const liberalPolicies = [
                 params[k] = newVal;
               });
               
-              // Adjust for rounding errors
+              // Adjust for rounding errors while respecting min/max
               const actualTotal = newValue + otherKeys.reduce((sum, k) => sum + params[k], 0);
               if (actualTotal !== 100) {
-                // Find the largest other slider and adjust it
-                const largest = otherKeys.reduce((a, b) => params[a] > params[b] ? a : b);
-                params[largest] += (100 - actualTotal);
+                const diff = 100 - actualTotal;
+                // Find a slider that can absorb the difference
+                const sortedKeys = [...otherKeys].sort((a, b) => params[b] - params[a]);
+                for (const k of sortedKeys) {
+                  const ctrlDef = mech.controls.find(c => c.id === k);
+                  const newVal = params[k] + diff;
+                  if (newVal >= ctrlDef.min && newVal <= ctrlDef.max) {
+                    params[k] = newVal;
+                    break;
+                  }
+                }
               }
             }
             
-            params[ctrl.id] = newValue;
+            // Clamp the changed slider to its bounds
+            const currentCtrlDef = mech.controls.find(c => c.id === ctrl.id);
+            params[ctrl.id] = Math.max(currentCtrlDef.min, Math.min(currentCtrlDef.max, newValue));
             
             // Update all slider displays
             mech.controls.forEach(c => {
@@ -4728,6 +4738,18 @@ const liberalPolicies = [
           immigrationConfig.annualLevel = state.immigrationConfig.annualLevel ?? 1000;
           immigrationConfig.selectionMechanism = state.immigrationConfig.selectionMechanism ?? 'current';
           if (state.immigrationConfig.params) {
+            // Validate params against bounds
+            Object.keys(state.immigrationConfig.params).forEach(mechId => {
+              const mechDef = selectionMechanisms.find(m => m.id === mechId);
+              if (mechDef && mechDef.controls) {
+                mechDef.controls.forEach(ctrl => {
+                  if (state.immigrationConfig.params[mechId] && state.immigrationConfig.params[mechId][ctrl.id] !== undefined) {
+                    const val = state.immigrationConfig.params[mechId][ctrl.id];
+                    state.immigrationConfig.params[mechId][ctrl.id] = Math.max(ctrl.min, Math.min(ctrl.max, val));
+                  }
+                });
+              }
+            });
             Object.assign(immigrationConfig.params, state.immigrationConfig.params);
           }
         }
