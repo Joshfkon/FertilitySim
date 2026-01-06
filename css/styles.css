@@ -668,6 +668,35 @@
       margin-bottom: 0 !important;
     }
 
+    /* X button in corner for easy dismissal */
+    .modal-x-close {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 32px;
+      height: 32px;
+      background: rgba(0,0,0,0.1);
+      border: none;
+      border-radius: 50%;
+      font-size: 18px;
+      color: #666;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      transition: all 0.2s ease;
+    }
+
+    .modal-x-close:hover {
+      background: rgba(0,0,0,0.2);
+      color: #333;
+    }
+
+    .modal-content {
+      position: relative;
+    }
+
     .modal-close-btn {
       display: block;
       width: calc(100% - 32px);

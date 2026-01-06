@@ -3449,6 +3449,16 @@ const liberalPolicies = [
           }
         });
       }
+      
+      // Universal X close buttons
+      document.querySelectorAll('.modal-x-close').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const modalId = btn.dataset.close;
+          if (modalId) {
+            document.getElementById(modalId)?.classList.remove('visible');
+          }
+        });
+      });
     }
 
     function getPersonalityType(tfr, fiscal, policies, entitlements, taxes, illiberalPolicies, gdp2075 = 75) {
