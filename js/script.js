@@ -3781,7 +3781,8 @@ const liberalPolicies = [
       let popularBonus = 0;
       popularPolicies.forEach(p => {
         // Base 8 points, scaled by intensity (50-200% range → 0.5x to 1.5x multiplier)
-        const intensityMultiplier = 0.5 + (p.intensity / 200);
+        const intensity = p.intensity !== undefined ? p.intensity : 100;
+        const intensityMultiplier = 0.5 + (intensity / 200);
         const thisBonus = Math.round(8 * intensityMultiplier);
         popularBonus += thisBonus;
       });
@@ -3830,8 +3831,9 @@ const liberalPolicies = [
         enabledEntitlements.forEach(r => {
           // Calculate how extreme the reform is (0 = minimum, 1 = maximum)
           const config = r.sliderConfig;
+          const currentValue = r.threshold !== undefined ? r.threshold : config.default;
           const range = config.max - config.min;
-          const intensity = range > 0 ? (r.threshold - config.min) / range : 0.5;
+          const intensity = range > 0 ? (currentValue - config.min) / range : 0.5;
           
           // Base -8, scaled by intensity (mild = 0.5x, extreme = 1.5x)
           const multiplier = 0.5 + intensity;
@@ -3841,8 +3843,9 @@ const liberalPolicies = [
         
         const avgIntensity = enabledEntitlements.reduce((sum, r) => {
           const config = r.sliderConfig;
+          const currentValue = r.threshold !== undefined ? r.threshold : config.default;
           const range = config.max - config.min;
-          return sum + (range > 0 ? (r.threshold - config.min) / range : 0.5);
+          return sum + (range > 0 ? (currentValue - config.min) / range : 0.5);
         }, 0) / enabledEntitlements.length;
         
         const intensityNote = avgIntensity > 0.6 ? ' (aggressive)' : avgIntensity < 0.4 ? ' (modest)' : '';
@@ -3979,7 +3982,7 @@ const liberalPolicies = [
       }
       
       // ===========================================
-      // 7. SPECIAL COMBOS
+      // 7. SPECIAL COMBOS & ECONOMIC IMPACT
       // ===========================================
       
       // "Grand Bargain" - entitlements + popular spending + fully funded
@@ -3993,6 +3996,17 @@ const liberalPolicies = [
       if (totalFertilityPolicies >= 3 && enabledIlliberal.length === 0) {
         score += 5;
         factors.push({ label: 'Pro-family framing', impact: +5, class: 'positive' });
+      }
+      
+      // GDP DRAG PENALTY - voters punish economic damage
+      // Calculate total GDP impact (drag from policies + taxes)
+      const gdpDragPct = tfr.gdpDrag || 0; // This is percentage points of GDP drag
+      if (gdpDragPct > 0.5) {
+        // Significant GDP drag - politically toxic
+        const gdpPenalty = Math.min(20, Math.round((gdpDragPct - 0.5) * 15));
+        score -= gdpPenalty;
+        const severity = gdpDragPct > 2 ? ' (economy crasher)' : gdpDragPct > 1 ? ' (significant)' : '';
+        factors.push({ label: `GDP drag ${gdpDragPct.toFixed(1)}%${severity}`, impact: -gdpPenalty, class: 'negative' });
       }
       
       // ===========================================
