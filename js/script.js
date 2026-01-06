@@ -3948,55 +3948,174 @@ const liberalPolicies = [
     // === STATE PERSISTENCE ===
     const STORAGE_KEY = 'tfrsim_state_v1';
     
-    // Compact state encoding for shorter URLs
-    // Format: p=idx:int,idx:int|i=idx,idx|e=idx:thr,idx:thr|t=idx:thr,idx:thr|m=lvl,mech
+    // Ultra-compact state encoding using bitmasks and base36
+    // Format: p{bitmask}.{idx:int,...}i{bitmask}e{idx.thr,...}t{idx.thr,...}m{lvl}.{mech}
     function encodeStateForURL() {
       try {
-        const parts = [];
+        let code = '';
         
-        // Liberal policies: index:intensity (only if intensity != 1)
-        const lp = liberalPolicies
-          .map((p, idx) => p.enabled ? (p.intensity !== 1 ? `${idx}:${Math.round(p.intensity * 100)}` : `${idx}`) : null)
-          .filter(Boolean);
-        if (lp.length) parts.push('p=' + lp.join(','));
-        
-        // Illiberal policies: just indices
-        const ip = illiberalPolicies
-          .map((p, idx) => p.enabled ? idx : null)
-          .filter(x => x !== null);
-        if (ip.length) parts.push('i=' + ip.join(','));
-        
-        // Entitlement reforms: index:threshold
-        const er = entitlementReforms
-          .map((r, idx) => r.enabled ? `${idx}:${r.threshold}` : null)
-          .filter(Boolean);
-        if (er.length) parts.push('e=' + er.join(','));
-        
-        // Taxes: index:threshold
-        const tx = taxIncreases
-          .map((t, idx) => t.enabled ? `${idx}:${t.threshold}` : null)
-          .filter(Boolean);
-        if (tx.length) parts.push('t=' + tx.join(','));
-        
-        // Immigration: only if changed from default
-        if (immigrationConfig.annualLevel !== 1000 || immigrationConfig.selectionMechanism !== 'current') {
-          const mechMap = { current: 0, points: 1, employment: 2, family: 3, diversity: 4 };
-          parts.push('m=' + immigrationConfig.annualLevel + ',' + mechMap[immigrationConfig.selectionMechanism]);
+        // Liberal policies: bitmask for enabled + separate intensity overrides
+        let lpBits = 0;
+        const intensities = [];
+        liberalPolicies.forEach((p, idx) => {
+          if (p.enabled) {
+            lpBits |= (1 << idx);
+            if (p.intensity !== 1) {
+              intensities.push(`${idx.toString(36)}${Math.round(p.intensity * 10).toString(36)}`);
+            }
+          }
+        });
+        if (lpBits > 0) {
+          code += 'p' + lpBits.toString(36);
+          if (intensities.length) code += '.' + intensities.join('');
         }
         
-        return parts.join('|');
+        // Illiberal policies: simple bitmask
+        let ipBits = 0;
+        illiberalPolicies.forEach((p, idx) => {
+          if (p.enabled) ipBits |= (1 << idx);
+        });
+        if (ipBits > 0) code += 'i' + ipBits.toString(36);
+        
+        // Entitlements: idx.threshold pairs (threshold in base36)
+        const er = entitlementReforms
+          .map((r, idx) => r.enabled ? idx.toString(36) + r.threshold.toString(36) : null)
+          .filter(Boolean);
+        if (er.length) code += 'e' + er.join('.');
+        
+        // Taxes: idx.threshold pairs
+        const tx = taxIncreases
+          .map((t, idx) => t.enabled ? idx.toString(36) + t.threshold.toString(36) : null)
+          .filter(Boolean);
+        if (tx.length) code += 't' + tx.join('.');
+        
+        // Immigration: level (in hundreds, base36) + mechanism
+        if (immigrationConfig.annualLevel !== 1000 || immigrationConfig.selectionMechanism !== 'current') {
+          const mechMap = { current: 0, points: 1, employment: 2, family: 3, diversity: 4 };
+          const lvlCode = Math.round(immigrationConfig.annualLevel / 100).toString(36);
+          code += 'm' + lvlCode + mechMap[immigrationConfig.selectionMechanism];
+        }
+        
+        return code || '0'; // '0' = default state
       } catch (e) {
         console.warn('Failed to encode state:', e);
         return null;
       }
     }
     
-    // Decode compact state from URL
+    // Decode ultra-compact state
     function decodeStateFromURL(encoded) {
       try {
-        // Support both old (base64 JSON) and new (compact) formats
+        // Handle old formats for backwards compatibility
+        if (encoded.includes('=') || encoded.startsWith('ey')) {
+          return decodeOldFormat(encoded);
+        }
+        
+        if (encoded === '0') return null; // Default state
+        
+        const state = { lp: [], ip: [], er: [], tx: [], im: { l: 1000, m: 'current' } };
+        const mechMap = ['current', 'points', 'employment', 'family', 'diversity'];
+        
+        // Parse each section
+        let pos = 0;
+        while (pos < encoded.length) {
+          const type = encoded[pos];
+          pos++;
+          
+          if (type === 'p') {
+            // Liberal policies bitmask + optional intensities
+            let end = pos;
+            while (end < encoded.length && /[0-9a-z]/.test(encoded[end]) && encoded[end] !== '.') end++;
+            const bits = parseInt(encoded.substring(pos, end), 36);
+            pos = end;
+            
+            // Check for intensity overrides
+            const intensityMap = {};
+            if (encoded[pos] === '.') {
+              pos++;
+              // Parse intensity pairs (single char idx + single char intensity)
+              while (pos < encoded.length && /[0-9a-z]/.test(encoded[pos]) && !'ieptm'.includes(encoded[pos])) {
+                const idx = parseInt(encoded[pos], 36);
+                const int = parseInt(encoded[pos + 1], 36) / 10;
+                intensityMap[idx] = int;
+                pos += 2;
+              }
+            }
+            
+            liberalPolicies.forEach((p, idx) => {
+              if (bits & (1 << idx)) {
+                state.lp.push({ i: p.id, n: intensityMap[idx] || 1 });
+              }
+            });
+          } else if (type === 'i') {
+            // Illiberal bitmask
+            let end = pos;
+            while (end < encoded.length && /[0-9a-z]/.test(encoded[end])) end++;
+            const bits = parseInt(encoded.substring(pos, end), 36);
+            pos = end;
+            
+            illiberalPolicies.forEach((p, idx) => {
+              if (bits & (1 << idx)) state.ip.push(p.id);
+            });
+          } else if (type === 'e') {
+            // Entitlements: parse until next section
+            let end = pos;
+            while (end < encoded.length && !'ieptm'.includes(encoded[end])) end++;
+            const parts = encoded.substring(pos, end).split('.');
+            pos = end;
+            
+            parts.forEach(part => {
+              if (part.length >= 2) {
+                const idx = parseInt(part[0], 36);
+                const thr = parseInt(part.substring(1), 36);
+                if (entitlementReforms[idx]) {
+                  state.er.push({ i: entitlementReforms[idx].id, t: thr });
+                }
+              }
+            });
+          } else if (type === 't') {
+            // Taxes: parse until next section
+            let end = pos;
+            while (end < encoded.length && !'ieptm'.includes(encoded[end])) end++;
+            const parts = encoded.substring(pos, end).split('.');
+            pos = end;
+            
+            parts.forEach(part => {
+              if (part.length >= 2) {
+                const idx = parseInt(part[0], 36);
+                const thr = parseInt(part.substring(1), 36);
+                if (taxIncreases[idx]) {
+                  state.tx.push({ i: taxIncreases[idx].id, t: thr });
+                }
+              }
+            });
+          } else if (type === 'm') {
+            // Immigration: level (base36, in hundreds) + mechanism digit
+            let end = pos;
+            while (end < encoded.length && /[0-9a-z]/.test(encoded[end])) end++;
+            const mStr = encoded.substring(pos, end);
+            pos = end;
+            
+            const mech = parseInt(mStr[mStr.length - 1]);
+            const lvl = parseInt(mStr.substring(0, mStr.length - 1), 36) * 100;
+            state.im = { l: lvl, m: mechMap[mech] || 'current' };
+          } else {
+            pos++; // Skip unknown
+          }
+        }
+        
+        return state;
+      } catch (e) {
+        console.warn('Failed to decode state:', e);
+        return null;
+      }
+    }
+    
+    // Backwards compatibility for old URL formats
+    function decodeOldFormat(encoded) {
+      try {
         if (encoded.includes('=')) {
-          // New compact format
+          // Medium format: p=0,3|t=7:100
           const state = { lp: [], ip: [], er: [], tx: [], im: { l: 1000, m: 'current' } };
           const mechMap = ['current', 'points', 'employment', 'family', 'diversity'];
           
@@ -4026,15 +4145,13 @@ const liberalPolicies = [
               state.im = { l: parseInt(lvl), m: mechMap[parseInt(mech)] || 'current' };
             }
           });
-          
           return state;
         } else {
-          // Old base64 JSON format (for backwards compatibility)
+          // Old base64 JSON format
           const json = decodeURIComponent(atob(encoded));
           return JSON.parse(json);
         }
       } catch (e) {
-        console.warn('Failed to decode state:', e);
         return null;
       }
     }
