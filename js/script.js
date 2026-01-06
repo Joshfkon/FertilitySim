@@ -3229,15 +3229,23 @@ const liberalPolicies = [
         </div>`;
       }
       
+      // Baseline values for current system (for display)
+      const currentBaseline = { family: 66, employment: 15, diversity: 5, refugee: 14 };
+      
       container.innerHTML = totalHtml + mech.controls.map(ctrl => {
         const value = params[ctrl.id];
         const step = ctrl.step || 1;
         const displayValue = ctrl.format ? ctrl.format(value) : `${value}${ctrl.unit}`;
         
+        // Show baseline for current system sliders
+        const baselineHtml = isCurrent && currentBaseline[ctrl.id] !== undefined
+          ? `<span class="baseline-indicator">(baseline: ${currentBaseline[ctrl.id]}%)</span>`
+          : '';
+        
         return `
           <div class="mechanism-control-row">
             <div class="mechanism-control-header">
-              <span class="mechanism-control-label">${ctrl.label}</span>
+              <span class="mechanism-control-label">${ctrl.label} ${baselineHtml}</span>
               <span class="mechanism-control-value" id="value-${ctrl.id}">${displayValue}</span>
             </div>
             <input type="range" class="mechanism-control-slider" id="ctrl-${ctrl.id}"
@@ -3904,6 +3912,40 @@ const liberalPolicies = [
         const penalty = Math.min(15, Math.floor((700 - immConfig.annualLevel) / 100) * 5);
         score -= penalty;
         factors.push({ label: 'Immigration cuts (Dems opposed)', impact: -penalty, class: 'negative' });
+      }
+      
+      // Current system composition changes (baseline: family 66, employment 15, diversity 5, refugee 14)
+      if (immConfig.selectionMechanism === 'current') {
+        const params = immConfig.params.current;
+        const baseline = { family: 66, employment: 15, diversity: 5, refugee: 14 };
+        
+        // Family share drops significantly - Dems lose key constituency
+        if (params.family < 40) {
+          const penalty = Math.min(12, Math.floor((40 - params.family) / 10) * 4);
+          score -= penalty;
+          factors.push({ label: 'Reduced family immigration', impact: -penalty, class: 'negative' });
+        }
+        
+        // Employment share increases significantly - Dems wary of corporate favoritism
+        if (params.employment > 30) {
+          const penalty = Math.min(8, Math.floor((params.employment - 30) / 15) * 4);
+          score -= penalty;
+          factors.push({ label: 'Employment-heavy mix', impact: -penalty, class: 'negative' });
+        }
+        
+        // Diversity share increases - GOP strongly opposed
+        if (params.diversity > 15) {
+          const penalty = Math.min(12, Math.floor((params.diversity - 15) / 10) * 5);
+          score -= penalty;
+          factors.push({ label: 'Expanded diversity lottery', impact: -penalty, class: 'negative' });
+        }
+        
+        // Refugee share increases significantly - GOP opposed
+        if (params.refugee > 25) {
+          const penalty = Math.min(10, Math.floor((params.refugee - 25) / 10) * 5);
+          score -= penalty;
+          factors.push({ label: 'High refugee allocation', impact: -penalty, class: 'negative' });
+        }
       }
       
       // ===========================================

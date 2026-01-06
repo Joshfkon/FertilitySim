@@ -2250,6 +2250,13 @@
       font-weight: 500;
     }
 
+    .baseline-indicator {
+      font-size: 0.75rem;
+      font-weight: 400;
+      color: #888;
+      margin-left: 6px;
+    }
+
     .mechanism-control-value {
       font-family: 'JetBrains Mono', monospace;
       font-weight: bold;
