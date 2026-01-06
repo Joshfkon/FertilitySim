@@ -3745,8 +3745,13 @@ const liberalPolicies = [
     }
 
     function calculateFeasibility() {
-      // Base score: 60 (moderately feasible by default)
-      let score = 60;
+      // ===========================================
+      // POLITICAL FEASIBILITY MODEL
+      // Framing: Can a Republican reconciliation package get 1-2 moderate 
+      // Democrat votes (like Manchin) while holding GOP moderates?
+      // Base score: 50 (needs work to pass)
+      // ===========================================
+      let score = 50;
       const factors = [];
       
       const fiscal = calculateFiscal();
@@ -3757,41 +3762,75 @@ const liberalPolicies = [
       const enabledTaxes = taxIncreases.filter(t => t.enabled);
       const immConfig = immigrationConfig;
       
-      // 1. FISCAL BALANCE (only unfunded spending is penalized)
+      // ===========================================
+      // 1. POPULAR SPENDING PROGRAMS
+      // These give moderate Dems political cover to vote yes
+      // +10 each, max +30
+      // ===========================================
+      const popularIds = ['child-allowance', 'parental-leave', 'childcare', 'ivf-coverage'];
+      const popularCount = Math.min(3, enabledPolicies.filter(p => popularIds.includes(p.id)).length);
+      if (popularCount > 0) {
+        const bonus = popularCount * 10;
+        score += bonus;
+        factors.push({ label: `${popularCount} popular program${popularCount > 1 ? 's' : ''} (+10 ea)`, impact: +bonus, class: 'positive' });
+      }
+      
+      // ===========================================
+      // 2. FISCAL RESPONSIBILITY
+      // "Paid for" is essential for moderate Dem votes
+      // ===========================================
       const netDeficit = fiscal.spending - fiscal.offsets;
-      if (netDeficit > 200) {
-        // Unfunded spending is hard to pass
-        const penalty = Math.min(25, Math.floor((netDeficit - 200) / 100) * 8);
+      const fundingRatio = fiscal.spending > 0 ? fiscal.offsets / fiscal.spending : 1;
+      
+      if (netDeficit <= 0 && fiscal.spending > 50) {
+        // Fully funded package - strong signal
+        score += 15;
+        factors.push({ label: 'Fully funded package', impact: +15, class: 'positive' });
+      } else if (fundingRatio >= 0.5 && fiscal.spending > 50) {
+        // Partially funded (>50% offset)
+        score += 8;
+        factors.push({ label: 'Partially funded (>50%)', impact: +8, class: 'positive' });
+      } else if (netDeficit > 200) {
+        // Large unfunded deficit - Manchin's red line
+        const penalty = Math.min(25, 15 + Math.floor((netDeficit - 200) / 100) * 5);
         score -= penalty;
-        factors.push({ label: 'Unfunded spending', impact: -penalty, class: 'negative' });
-      } else if (netDeficit <= 0 && fiscal.spending > 100) {
-        // Fully funded large package is politically impressive
-        score += 10;
-        factors.push({ label: 'Fully funded package', impact: +10, class: 'positive' });
-      } else if (fiscal.spending > 0 && fiscal.spending <= 100) {
-        score += 5;
-        factors.push({ label: 'Modest spending', impact: +5, class: 'positive' });
+        factors.push({ label: 'Large unfunded deficit', impact: -penalty, class: 'negative' });
+      } else if (netDeficit > 100) {
+        // Moderate unfunded spending
+        score -= 8;
+        factors.push({ label: 'Unfunded spending', impact: -8, class: 'negative' });
       }
       
-      // 2. ENTITLEMENT CUTS
-      // Very politically difficult
+      // ===========================================
+      // 3. ENTITLEMENT CUTS
+      // Dems can't vote to cut SS/Medicare without cover
+      // -10 each, extra -10 if no popular spending to offset
+      // ===========================================
       if (enabledEntitlements.length > 0) {
-        const penalty = enabledEntitlements.length * 8;
-        score -= penalty;
-        factors.push({ label: `${enabledEntitlements.length} entitlement cut${enabledEntitlements.length > 1 ? 's' : ''}`, impact: -penalty, class: 'negative' });
+        let entitlementPenalty = enabledEntitlements.length * 10;
+        factors.push({ label: `${enabledEntitlements.length} entitlement cut${enabledEntitlements.length > 1 ? 's' : ''} (-10 ea)`, impact: -(enabledEntitlements.length * 10), class: 'negative' });
+        
+        // Extra penalty if cutting entitlements without popular spending to show for it
+        if (popularCount === 0) {
+          entitlementPenalty += 10;
+          factors.push({ label: 'Cuts without popular spending', impact: -10, class: 'negative' });
+        }
+        
+        score -= entitlementPenalty;
       }
       
-      // 3. TAX INCREASES - base penalty + specific unpopular taxes
+      // ===========================================
+      // 4. TAX INCREASES
+      // Base penalty + extra for unpopular taxes
+      // ===========================================
       if (enabledTaxes.length > 0) {
-        // Base penalty per tax
         let taxPenalty = enabledTaxes.length * 3;
         
-        // Extra penalties for politically unpopular taxes
         const unpopularTaxes = {
-          'land-value-tax': { penalty: 20, label: 'Land Value Tax (radical reform)' },
+          'land-value-tax': { penalty: 20, label: 'Land Value Tax (radical)' },
           'vat': { penalty: 12, label: 'New federal VAT' },
           'income-tax-all': { penalty: 10, label: 'Broad income tax hike' },
-          'carbon-tax': { penalty: 8, label: 'Carbon tax (energy costs)' },
+          'carbon-tax': { penalty: 8, label: 'Carbon tax' },
           'capital-gains': { penalty: 5, label: 'Capital gains reform' },
           'stepped-up-basis': { penalty: 5, label: '"Death tax" expansion' }
         };
@@ -3805,93 +3844,98 @@ const liberalPolicies = [
         });
         
         score -= taxPenalty;
-        if (enabledTaxes.length > 0 && !enabledTaxes.some(t => unpopularTaxes[t.id])) {
+        if (!enabledTaxes.some(t => unpopularTaxes[t.id])) {
           factors.push({ label: `${enabledTaxes.length} tax increase${enabledTaxes.length > 1 ? 's' : ''}`, impact: -(enabledTaxes.length * 3), class: 'negative' });
         }
       }
       
+      // ===========================================
       // 5. ILLIBERAL POLICIES
-      // These require authoritarianism - automatic F
+      // Instant dealbreaker for any Democrat
+      // ===========================================
       let authoritarianLevel = null;
       if (enabledIlliberal.length > 0) {
-        // Check for hard vs soft authoritarianism
-        // Hard: abortion/contraception bans (bodily autonomy violations)
-        // Soft: childlessness taxes, divorce restrictions, etc.
         const hardAuthPolicies = ['abortion-ban', 'contraception-ban'];
         const hasHardAuth = enabledIlliberal.some(p => hardAuthPolicies.includes(p.id));
         
         if (hasHardAuth) {
           authoritarianLevel = 'hard';
-          score = 0; // Force F
-          factors.unshift({ label: 'Requires hard authoritarianism', impact: -100, class: 'negative' });
+          score = 0;
+          factors.unshift({ label: 'Hard authoritarianism (no Dem votes)', impact: -100, class: 'negative' });
         } else {
           authoritarianLevel = 'soft';
-          score = Math.min(score, 15); // Cap at F range
-          factors.unshift({ label: 'Requires soft authoritarianism', impact: -60, class: 'negative' });
+          score = Math.min(score, 15);
+          factors.unshift({ label: 'Soft authoritarianism (no Dem votes)', impact: -60, class: 'negative' });
         }
       }
       
-      // 6. POPULAR POLICIES (child allowance, paid leave, childcare)
-      const popularIds = ['child-allowance', 'parental-leave', 'childcare'];
-      const popularCount = enabledPolicies.filter(p => popularIds.includes(p.id)).length;
-      if (popularCount > 0) {
-        const bonus = popularCount * 5;
-        score += bonus;
-        factors.push({ label: `${popularCount} popular polic${popularCount > 1 ? 'ies' : 'y'}`, impact: +bonus, class: 'positive' });
-      }
-      
-      // 7. IMMIGRATION CHANGES
+      // ===========================================
+      // 6. IMMIGRATION CHANGES
+      // Major structural changes are coalition killers
+      // ===========================================
       if (immConfig.selectionMechanism !== 'current') {
-        // Changing the system is politically difficult
         if (immConfig.selectionMechanism === 'points') {
-          score -= 8;
-          factors.push({ label: 'Points system overhaul', impact: -8, class: 'negative' });
+          // Political suicide for Dems - abandons family reunification
+          score -= 25;
+          factors.push({ label: 'Points system (Dems lose base)', impact: -25, class: 'negative' });
         } else if (immConfig.selectionMechanism === 'diversity') {
+          // GOP absolutely won't support
+          score -= 20;
+          factors.push({ label: 'Diversity expansion (GOP opposed)', impact: -20, class: 'negative' });
+        } else if (immConfig.selectionMechanism === 'family') {
+          // Chain migration expansion - GOP won't vote
           score -= 15;
-          factors.push({ label: 'Diversity expansion', impact: -15, class: 'negative' });
+          factors.push({ label: 'Family expansion (GOP opposed)', impact: -15, class: 'negative' });
         } else if (immConfig.selectionMechanism === 'employment') {
-          score -= 5;
-          factors.push({ label: 'H1B expansion', impact: -5, class: 'negative' });
+          // H1B expansion - both parties skeptical
+          score -= 12;
+          factors.push({ label: 'H1B expansion (mixed support)', impact: -12, class: 'negative' });
         }
       }
       
       // Immigration level changes
       if (immConfig.annualLevel > 1500) {
-        const penalty = Math.min(15, Math.floor((immConfig.annualLevel - 1500) / 500) * 8);
+        // Large increase - GOP base opposed
+        const penalty = Math.min(15, Math.floor((immConfig.annualLevel - 1500) / 300) * 5);
         score -= penalty;
-        factors.push({ label: 'High immigration level', impact: -penalty, class: 'negative' });
-      } else if (immConfig.annualLevel < 500) {
-        score -= 10;
-        factors.push({ label: 'Low immigration level', impact: -10, class: 'negative' });
+        factors.push({ label: 'High immigration (GOP opposed)', impact: -penalty, class: 'negative' });
+      } else if (immConfig.annualLevel < 700) {
+        // Harsh cuts - Dems can't support
+        const penalty = Math.min(15, Math.floor((700 - immConfig.annualLevel) / 100) * 5);
+        score -= penalty;
+        factors.push({ label: 'Immigration cuts (Dems opposed)', impact: -penalty, class: 'negative' });
       }
       
-      // 8. BIPARTISAN APPEAL
-      // Mix of liberal fertility policies + entitlement reform = bipartisan
-      if (enabledPolicies.length > 0 && enabledEntitlements.length > 0) {
-        score += 10;
-        factors.push({ label: 'Bipartisan mix', impact: +10, class: 'positive' });
+      // ===========================================
+      // 7. SPECIAL COMBOS
+      // ===========================================
+      
+      // "Grand Bargain" - entitlements + popular spending + fully funded
+      if (enabledEntitlements.length > 0 && popularCount >= 2 && netDeficit <= 0) {
+        score += 12;
+        factors.push({ label: 'Grand bargain package', impact: +12, class: 'positive' });
       }
       
-      // 9. SIMPLICITY BONUS
-      // Fewer moving parts = easier to pass
-      const totalPolicies = enabledPolicies.length + enabledIlliberal.length + enabledEntitlements.length + enabledTaxes.length;
-      if (totalPolicies <= 3 && totalPolicies > 0) {
-        score += 8;
-        factors.push({ label: 'Simple package', impact: +8, class: 'positive' });
+      // Pro-family framing bonus (3+ fertility policies)
+      const totalFertilityPolicies = enabledPolicies.length;
+      if (totalFertilityPolicies >= 3 && enabledIlliberal.length === 0) {
+        score += 5;
+        factors.push({ label: 'Pro-family framing', impact: +5, class: 'positive' });
       }
       
-      // Clamp score
+      // ===========================================
+      // FINAL GRADE
+      // ===========================================
       score = Math.max(0, Math.min(100, score));
       
-      // Grade
       let grade, gradeClass, barColor;
-      if (score >= 75) {
+      if (score >= 70) {
         grade = 'A'; gradeClass = 'high'; barColor = '#2e7d32';
-      } else if (score >= 60) {
+      } else if (score >= 55) {
         grade = 'B'; gradeClass = 'high'; barColor = '#558b2f';
-      } else if (score >= 45) {
+      } else if (score >= 40) {
         grade = 'C'; gradeClass = 'medium'; barColor = '#f57f17';
-      } else if (score >= 30) {
+      } else if (score >= 25) {
         grade = 'D'; gradeClass = 'low'; barColor = '#e65100';
       } else {
         grade = 'F'; gradeClass = 'very-low'; barColor = '#c62828';
@@ -4818,3 +4862,4 @@ const liberalPolicies = [
 
     init();
   
+
