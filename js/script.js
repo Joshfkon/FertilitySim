@@ -1329,21 +1329,18 @@ const liberalPolicies = [
       const savedLevel = immigrationConfig.annualLevel;
       const savedMech = immigrationConfig.selectionMechanism;
       const savedCurrentParams = { ...immigrationConfig.params.current };
-      console.log('calculateFiscal - SAVED params:', JSON.stringify(savedCurrentParams));
       
       // Set to baseline: 1M/yr with current system at default params
       // IMPORTANT: Modify in place to preserve object reference for event handlers
       immigrationConfig.annualLevel = 1000;
       immigrationConfig.selectionMechanism = 'current';
       Object.assign(immigrationConfig.params.current, { family: 66, employment: 15, diversity: 5, refugee: 14 });
-      console.log('calculateFiscal - BASELINE params:', JSON.stringify(immigrationConfig.params.current));
       const baselineImpacts = calculateImmigrationImpacts();
       
       // Restore current settings (modify in place)
       immigrationConfig.annualLevel = savedLevel;
       immigrationConfig.selectionMechanism = savedMech;
       Object.assign(immigrationConfig.params.current, savedCurrentParams);
-      console.log('calculateFiscal - RESTORED params:', JSON.stringify(immigrationConfig.params.current));
       const currentImpacts = calculateImmigrationImpacts();
       
       // Calculate per-immigrant fiscal for both (including gen2)
@@ -2960,8 +2957,6 @@ const liberalPolicies = [
       const mech = immigrationConfig.selectionMechanism;
       const params = immigrationConfig.params[mech];
       
-      console.log('calculateImmigrationImpacts - mech:', mech, 'params:', JSON.stringify(params));
-      
       // Get derived source composition
       const effectiveWeights = deriveSourceComposition();
       
@@ -3253,45 +3248,45 @@ const liberalPolicies = [
       }).join('');
       
       // Add event listeners
+      // IMPORTANT: Capture mechId (string) not params (object reference) to avoid stale closure
+      const mechId = mech.id;
+      
       mech.controls.forEach(ctrl => {
         const slider = document.getElementById(`ctrl-${ctrl.id}`);
         const valueEl = document.getElementById(`value-${ctrl.id}`);
         
         slider.addEventListener('input', () => {
-          console.log('=== SLIDER INPUT EVENT ===');
-          console.log('Slider:', ctrl.id, 'Value:', slider.value);
-          console.log('params === immigrationConfig.params.current?', params === immigrationConfig.params.current);
-          console.log('Before update - immigrationConfig.params.current:', JSON.stringify(immigrationConfig.params.current));
-          
+          // Always get fresh reference to params object
+          const currentParams = immigrationConfig.params[mechId];
           const newValue = ctrl.step === 0.1 ? parseFloat(slider.value) : parseInt(slider.value);
           
           // For current system, maintain 100% total
           if (isCurrent) {
             const shareKeys = ['family', 'employment', 'diversity', 'refugee'];
             const otherKeys = shareKeys.filter(k => k !== ctrl.id);
-            const oldOtherTotal = otherKeys.reduce((sum, k) => sum + params[k], 0);
+            const oldOtherTotal = otherKeys.reduce((sum, k) => sum + currentParams[k], 0);
             const targetOtherTotal = 100 - newValue;
             
             // Set this slider's value
-            params[ctrl.id] = Math.max(0, Math.min(100, newValue));
+            currentParams[ctrl.id] = Math.max(0, Math.min(100, newValue));
             
             if (oldOtherTotal > 0 && targetOtherTotal >= 0) {
               // Scale other sliders proportionally
               const scale = targetOtherTotal / oldOtherTotal;
               otherKeys.forEach(k => {
-                params[k] = Math.max(0, Math.round(params[k] * scale));
+                currentParams[k] = Math.max(0, Math.round(currentParams[k] * scale));
               });
               
               // Fix rounding to ensure exactly 100%
-              const actualTotal = shareKeys.reduce((sum, k) => sum + params[k], 0);
+              const actualTotal = shareKeys.reduce((sum, k) => sum + currentParams[k], 0);
               if (actualTotal !== 100) {
                 // Adjust the largest "other" slider
-                const largest = otherKeys.reduce((a, b) => params[a] > params[b] ? a : b);
-                params[largest] = Math.max(0, params[largest] + (100 - actualTotal));
+                const largest = otherKeys.reduce((a, b) => currentParams[a] > currentParams[b] ? a : b);
+                currentParams[largest] = Math.max(0, currentParams[largest] + (100 - actualTotal));
               }
             } else if (targetOtherTotal >= 0) {
               // All others are 0, just set one to the remainder
-              params[otherKeys[0]] = targetOtherTotal;
+              currentParams[otherKeys[0]] = targetOtherTotal;
             }
             
             // Update all slider displays
@@ -3299,31 +3294,25 @@ const liberalPolicies = [
               const s = document.getElementById(`ctrl-${c.id}`);
               const v = document.getElementById(`value-${c.id}`);
               if (s && v) {
-                s.value = params[c.id];
-                v.textContent = c.format ? c.format(params[c.id]) : `${params[c.id]}${c.unit}`;
+                s.value = currentParams[c.id];
+                v.textContent = c.format ? c.format(currentParams[c.id]) : `${currentParams[c.id]}${c.unit}`;
               }
             });
             
             // Update total display
             const totalEl = document.getElementById('current-total');
             if (totalEl) {
-              const total = shareKeys.reduce((sum, k) => sum + params[k], 0);
+              const total = shareKeys.reduce((sum, k) => sum + currentParams[k], 0);
               totalEl.textContent = total;
             }
           } else {
-            params[ctrl.id] = newValue;
+            currentParams[ctrl.id] = newValue;
             valueEl.textContent = ctrl.format ? ctrl.format(newValue) : `${newValue}${ctrl.unit}`;
           }
-          
-          console.log('After update - immigrationConfig.params.current:', JSON.stringify(immigrationConfig.params.current));
-          console.log('After update - params:', JSON.stringify(params));
           
           updateCompositionBar();
           updateImmigrationDisplay();
           updateDisplay();
-          
-          console.log('After updateDisplay - immigrationConfig.params.current:', JSON.stringify(immigrationConfig.params.current));
-          console.log('=== END SLIDER EVENT ===');
         });
       });
     }
