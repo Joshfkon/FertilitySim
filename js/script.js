@@ -3831,8 +3831,8 @@ const liberalPolicies = [
         }
       }
       
-      // 6. POPULAR POLICIES (child allowance, paid leave)
-      const popularIds = ['child-allowance', 'paid-leave', 'childcare-subsidy'];
+      // 6. POPULAR POLICIES (child allowance, paid leave, childcare)
+      const popularIds = ['child-allowance', 'parental-leave', 'childcare'];
       const popularCount = enabledPolicies.filter(p => popularIds.includes(p.id)).length;
       if (popularCount > 0) {
         const bonus = popularCount * 5;
