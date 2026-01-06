@@ -3517,6 +3517,27 @@ const liberalPolicies = [
         e.stopPropagation();
         hideMethodology(gdpMethodology);
       });
+      
+      // Political Feasibility methodology click
+      const feasibilityGrade = document.getElementById('header-feasibility-grade');
+      const feasibilityIcon = document.querySelector('.feasibility-info-icon');
+      const feasibilityMethodology = document.getElementById('feasibility-methodology');
+      const feasibilityBack = feasibilityMethodology.querySelector('.feasibility-back-button');
+      
+      function showFeasibilityMethodology(e) {
+        e.stopPropagation();
+        // Update the breakdown before showing
+        updateFeasibilityBreakdown();
+        showMethodology(feasibilityMethodology);
+      }
+      
+      feasibilityGrade.addEventListener('click', showFeasibilityMethodology);
+      feasibilityIcon.addEventListener('click', showFeasibilityMethodology);
+      
+      feasibilityBack.addEventListener('click', (e) => {
+        e.stopPropagation();
+        hideMethodology(feasibilityMethodology);
+      });
 
       // Close methodologies when clicking backdrop
       backdrop.addEventListener('click', () => {
@@ -3846,6 +3867,37 @@ const liberalPolicies = [
       }
       
       return { score, grade, gradeClass, barColor, factors, authoritarianLevel };
+    }
+    
+    function updateFeasibilityBreakdown() {
+      const feasibility = calculateFeasibility();
+      const breakdownEl = document.getElementById('feasibility-breakdown');
+      const finalScoreEl = document.getElementById('feasibility-final-score');
+      const resultGradeEl = document.getElementById('feasibility-result-grade');
+      
+      // Build factor rows
+      let factorHtml = '<div class="feasibility-breakdown-title">Score Factors</div>';
+      
+      if (feasibility.factors.length === 0) {
+        factorHtml += '<div class="feasibility-factor-row"><span>No policies selected</span><span>—</span></div>';
+      } else {
+        feasibility.factors.forEach(factor => {
+          const sign = factor.impact >= 0 ? '+' : '';
+          factorHtml += `
+            <div class="feasibility-factor-row ${factor.class}">
+              <span>${factor.label}</span>
+              <span>${sign}${factor.impact}</span>
+            </div>
+          `;
+        });
+      }
+      
+      breakdownEl.innerHTML = factorHtml;
+      
+      // Update final score and grade
+      finalScoreEl.textContent = feasibility.score;
+      resultGradeEl.textContent = feasibility.grade;
+      resultGradeEl.className = `feasibility-result-grade grade-${feasibility.grade.toLowerCase()}`;
     }
 
     function initShareModal() {
