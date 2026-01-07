@@ -2378,5 +2378,26 @@
         grid-template-columns: repeat(2, 1fr);
       }
     }
-  
+
+    /* Creator Credit Footer */
+    .creator-credit {
+      text-align: center;
+      padding: 16px;
+      font-size: 12px;
+      color: #78909c;
+      background: var(--paper);
+      border-top: 1px solid #e0e0e0;
+    }
+
+    .creator-credit a {
+      color: #546e7a;
+      text-decoration: none;
+      transition: color 0.2s ease;
+    }
+
+    .creator-credit a:hover {
+      color: var(--accent);
+      text-decoration: underline;
+    }
+
 
