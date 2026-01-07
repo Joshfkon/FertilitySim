@@ -434,22 +434,24 @@ const liberalPolicies = [
     ];
 
     const taxIncreases = [
-      { 
-        id: 'income-tax-top', 
-        name: 'Top Marginal Rate Increase', 
-        description: 'Raise top bracket rate. Threshold adjustable.', 
-        savingsLow: 80, savingsHigh: 120, 
+      {
+        id: 'income-tax-top',
+        name: 'Top Marginal Rate Increase',
+        description: 'Raise top bracket rate. Threshold adjustable.',
+        savingsLow: 80, savingsHigh: 120,
         enabled: false,
         threshold: 500, // $500k default
         thresholdMin: 250,
         thresholdMax: 1000,
         thresholdLabel: 'Income threshold ($k)',
-        gdpDrag: 0.002, // 0.2% annual GDP drag
+        // NEW: Separate level and growth effects (per ~2.6pp rate increase at default)
+        gdpLevelEffect: -0.0004, // -0.04% one-time GDP level shift
+        gdpGrowthEffect: -0.00003, // -0.003% annual growth drag
         tfrDrag: 0.01, // TFR penalty from reduced wages/uncertainty
-        dragRationale: 'Labor supply elasticity ~0.1-0.3 for high earners; reduced work effort and tax avoidance',
+        dragRationale: 'Labor supply elasticity ~0.1-0.3 for high earners; level effect from reduced effort, tiny growth effect from innovation',
         confidence: 'medium',
         methodology: {
-          derivation: 'GDP drag: ~0.2% annually from labor supply response. TFR drag: reduced high-income wages + uncertainty. Keane (2011): compensated elasticity ~0.3 for high earners.',
+          derivation: 'Level effect: ~0.015% per pp from labor supply (Keane 2011). Growth effect: ~0.001% per pp from reduced high-skill entrepreneurship. TFR drag: reduced high-income wages + uncertainty.',
           sources: [
             { cite: 'Keane (2011)', finding: 'Meta-analysis of labor supply elasticities', elasticity: '~0.3 compensated' },
             { cite: 'Saez et al. (2012)', finding: 'Top income elasticity to tax rates', elasticity: '~0.5' },
@@ -458,46 +460,51 @@ const liberalPolicies = [
           notes: 'Higher thresholds reduce revenue but also reduce behavioral distortion. $250k threshold captures more revenue but higher growth drag.'
         }
       },
-      { 
-        id: 'corporate-tax', 
-        name: 'Corporate Tax Increase', 
-        description: 'Raise corporate rate toward pre-TCJA levels.', 
-        savingsLow: 100, savingsHigh: 150, 
+      {
+        id: 'corporate-tax',
+        name: 'Corporate Tax Increase',
+        description: 'Raise corporate rate toward pre-TCJA levels.',
+        savingsLow: 100, savingsHigh: 150,
         enabled: false,
         threshold: 28, // 28% default rate
         thresholdMin: 25,
         thresholdMax: 35,
         thresholdLabel: 'Corporate rate (%)',
-        gdpDrag: 0.01, // 1% annual GDP drag (7pp × 0.15%)
+        // NEW: Level effect is one-time GDP shift; growth effect is tiny annual drag
+        // At 28% (7pp above 21%): level = 7 * -0.0005 = -0.35%, growth = 7 * -0.00003 = -0.021%/yr
+        gdpLevelEffect: -0.0035, // -0.35% one-time GDP level shift (7pp × 0.05%)
+        gdpGrowthEffect: -0.00021, // -0.021% annual growth drag (7pp × 0.003%)
         tfrDrag: 0.04, // Higher TFR impact via wage channel
-        dragRationale: 'Reduces business investment; CBO estimates 0.1-0.2% GDP per percentage point',
+        dragRationale: 'Reduces business investment (level effect); minor impact on innovation (growth effect). CBO level estimates ~0.05% GDP per pp.',
         confidence: 'medium-high',
         methodology: {
-          derivation: 'GDP drag: CBO estimates ~0.15% GDP per 1pp. At 28% (vs 21%), 7pp increase → ~1% GDP drag. TFR drag higher due to wage incidence (20-50% falls on workers).',
+          derivation: 'Level effect: CBO estimates ~0.05% GDP per 1pp (one-time capital stock adjustment). Growth effect: ~0.003% per pp from reduced R&D/innovation incentives. 7pp increase → -0.35% level, -0.02%/yr growth.',
           sources: [
-            { cite: 'CBO (2017)', finding: 'Corporate tax and GDP relationship', elasticity: '~0.15% GDP per 1pp' },
+            { cite: 'CBO (2017)', finding: 'Corporate tax and GDP relationship', elasticity: '~0.05% level per 1pp' },
             { cite: 'Gravelle (2014)', finding: 'Corporate tax incidence on wages', elasticity: '20-50% on workers' },
             { cite: 'Zwick & Mahon (2017)', finding: 'Investment response to tax changes', elasticity: 'High for SMEs' }
           ],
-          notes: 'Investment effects take 5-10 years to fully materialize. Short-run revenue higher than long-run due to behavioral response.'
+          notes: 'Level effects materialize over 5-10 years. Growth effects are small per economic literature—most impact is one-time capital reallocation.'
         }
       },
-      { 
-        id: 'capital-gains', 
-        name: 'Capital Gains Tax Parity', 
-        description: 'Tax capital gains as ordinary income above threshold.', 
-        savingsLow: 150, savingsHigh: 200, 
+      {
+        id: 'capital-gains',
+        name: 'Capital Gains Tax Parity',
+        description: 'Tax capital gains as ordinary income above threshold.',
+        savingsLow: 150, savingsHigh: 200,
         enabled: false,
         threshold: 1000, // $1M default
         thresholdMin: 400,
         thresholdMax: 5000,
         thresholdLabel: 'Income threshold ($k)',
-        gdpDrag: 0.003, // 0.3% annual GDP drag from capital misallocation
+        // NEW: Level effect from lock-in; tiny growth effect
+        gdpLevelEffect: -0.002, // -0.2% one-time GDP level shift from reduced capital mobility
+        gdpGrowthEffect: -0.00015, // -0.015% annual growth drag from reduced entrepreneurship
         tfrDrag: 0.05, // Higher TFR impact: entrepreneurship, wealth building
-        dragRationale: 'Strong lock-in effect; reduces capital reallocation efficiency',
+        dragRationale: 'Lock-in effect reduces capital reallocation (level); modest growth drag from reduced entrepreneurship',
         confidence: 'medium',
         methodology: {
-          derivation: 'GDP drag: ~0.3% annually from lock-in effect reducing capital mobility. TFR drag higher: reduced entrepreneurship, wealth building for family formation. Dai et al. (2008): realization elasticity ~-0.5 to -0.7.',
+          derivation: 'Level effect: ~0.2% from lock-in reducing capital mobility (Dai et al. 2008). Growth effect: ~0.015%/yr from reduced entrepreneurship formation. TFR drag: wealth building for family formation affected.',
           sources: [
             { cite: 'Dai et al. (2008)', finding: 'Elasticity of capital gains realizations', elasticity: '-0.5 to -0.7' },
             { cite: 'Auerbach (1988)', finding: 'Lock-in effect magnitude', elasticity: 'Significant above 25% rate' },
@@ -506,22 +513,25 @@ const liberalPolicies = [
           notes: 'Revenue estimates assume significant behavioral response. Actual revenue could be 40-60% of static estimate due to lock-in.'
         }
       },
-      { 
-        id: 'financial-transaction', 
-        name: 'Financial Transaction Tax', 
-        description: 'Small tax on securities trades.', 
-        savingsLow: 60, savingsHigh: 100, 
+      {
+        id: 'financial-transaction',
+        name: 'Financial Transaction Tax',
+        description: 'Small tax on securities trades.',
+        savingsLow: 60, savingsHigh: 100,
         enabled: false,
-        threshold: 10, // 0.10% default (shown as basis points × 10)
+        threshold: 10, // 0.10% default (10 basis points)
         thresholdMin: 5,
         thresholdMax: 50,
         thresholdLabel: 'Rate (basis points)',
-        gdpDrag: 0.002, // 0.2% annual GDP drag
+        // NEW: Level effect from reduced liquidity; growth effect from cost of capital
+        // At 10bp: level = -0.05%, growth = -0.005%/yr
+        gdpLevelEffect: -0.0005, // -0.05% one-time GDP level shift at 10bp
+        gdpGrowthEffect: -0.00005, // -0.005% annual growth drag at 10bp
         tfrDrag: 0.02, // Modest TFR impact
-        dragRationale: 'Reduces market liquidity; widens bid-ask spreads',
+        dragRationale: 'Reduces market liquidity (level effect); increases cost of capital (small growth effect)',
         confidence: 'low',
         methodology: {
-          derivation: 'GDP drag: ~0.1-0.2% annually from increased cost of capital. TFR drag modest: primarily affects financial sector, less direct impact on families. Swedish FTT (1984-91) reduced trading 50%.',
+          derivation: 'Level effect: ~0.05% per 10bp from reduced liquidity and wider spreads. Growth effect: ~0.005%/yr from marginally higher cost of capital. Swedish FTT (1984-91) reduced trading 50%.',
           sources: [
             { cite: 'Umlauf (1993)', finding: 'Swedish FTT reduced trading 50%', elasticity: 'High volume elasticity' },
             { cite: 'Matheson (2011)', finding: 'IMF review of FTT experiences', elasticity: 'Varied by market depth' },
@@ -530,22 +540,24 @@ const liberalPolicies = [
           notes: 'HIGH UNCERTAINTY: Effects depend heavily on market structure and rate level. Revenue estimates vary 3x across studies.'
         }
       },
-      { 
-        id: 'estate-tax', 
-        name: 'Estate Tax Reform', 
-        description: 'Lower exemption threshold for estate taxation.', 
-        savingsLow: 40, savingsHigh: 70, 
+      {
+        id: 'estate-tax',
+        name: 'Estate Tax Reform',
+        description: 'Lower exemption threshold for estate taxation.',
+        savingsLow: 40, savingsHigh: 70,
         enabled: false,
         threshold: 3500, // $3.5M default
         thresholdMin: 1000,
         thresholdMax: 7000,
         thresholdLabel: 'Exemption ($k)',
-        gdpDrag: 0.001, // Minimal GDP drag
+        // NEW: Minimal level effect; no growth effect (mostly avoidance behavior)
+        gdpLevelEffect: -0.0001, // -0.01% one-time GDP level shift
+        gdpGrowthEffect: 0, // No growth effect (doesn't affect innovation/productivity)
         tfrDrag: 0.01, // Modest TFR impact
-        dragRationale: 'Minimal growth impact; affects intergenerational transfers',
+        dragRationale: 'Minimal growth impact—mostly affects intergenerational transfers and avoidance behavior',
         confidence: 'medium',
         methodology: {
-          derivation: 'GDP drag minimal—most economic activity unaffected. TFR effect ambiguous: reduces bequests but also reduces "Carnegie effect". Kopczuk (2013): estate elasticity ~0.1-0.2.',
+          derivation: 'Level effect minimal (~0.01%) as most economic activity unaffected. No growth effect—estate taxes don\'t impact innovation or productivity. TFR effect ambiguous: reduces bequests but also reduces "Carnegie effect".',
           sources: [
             { cite: 'Kopczuk (2013)', finding: 'Elasticity of reported estates', elasticity: '~0.1-0.2' },
             { cite: 'Gale & Slemrod (2001)', finding: 'Estate tax and savings behavior', elasticity: 'Small effect' },
@@ -554,47 +566,53 @@ const liberalPolicies = [
           notes: 'Current $13M exemption (2024) means estate tax affects <0.2% of estates. Lower exemption broadens base significantly.'
         }
       },
-      { 
-        id: 'carbon-tax', 
-        name: 'Carbon Tax', 
-        description: 'Price on carbon emissions, phased in over 5 years.', 
-        savingsLow: 80, savingsHigh: 150, 
+      {
+        id: 'carbon-tax',
+        name: 'Carbon Tax',
+        description: 'Price on carbon emissions, phased in over 5 years.',
+        savingsLow: 80, savingsHigh: 150,
         enabled: false,
         threshold: 50, // $50/ton default
         thresholdMin: 25,
         thresholdMax: 150,
         thresholdLabel: 'Price per ton ($)',
-        gdpDrag: 0.005, // 0.5% GDP drag (disputed - could be 0.2-1%)
+        // NEW: Small level effect with revenue recycling; no growth effect
+        // At $50/ton: level = -0.04%, growth = 0 (with recycling, near-neutral)
+        gdpLevelEffect: -0.0004, // -0.04% one-time GDP level shift at $50/ton
+        gdpGrowthEffect: 0, // No growth effect with revenue recycling
         tfrDrag: 0.025, // Higher TFR impact due to regressivity
-        dragRationale: 'Energy price increases hit young families hardest; regressive burden 2-4x higher on low-income households',
+        dragRationale: 'With revenue recycling, GDP impact is near-neutral. Regressive burden still affects young families.',
         confidence: 'medium',
         methodology: {
-          derivation: 'GDP drag disputed: 0.2-1% depending on model. TFR drag higher due to regressivity—NBER finds burden 2-4x higher on low-income as share of income. Young families disproportionately affected.',
+          derivation: 'Level effect: ~0.04% at $50/ton assuming revenue recycling (Goulder & Hafstead 2013). Growth effect: near-zero with lump-sum rebates or tax cuts. TFR drag remains due to regressive transition burden on young families.',
           sources: [
             { cite: 'Goulder & Hafstead (2013)', finding: '$10/ton rising 5%/yr → 0.6% lower GDP at year 20', elasticity: 'Moderate' },
             { cite: 'NERA/NAM (2013)', finding: '$20/ton → $350/household by year 20; 80% reduction → 3.4% GDP loss', elasticity: 'High' },
             { cite: 'Heritage Foundation', finding: '$25/ton → $1,400-1,900/yr income loss per family of four', elasticity: 'High' },
             { cite: 'NBER Grainger & Kolstad', finding: 'Burden 2-4x higher on low-income as share of income', elasticity: 'Regressive' }
           ],
-          notes: 'KEY ISSUE: Carbon tax is regressive—low-income households spend larger share of income on energy. Young families particularly affected. Revenue recycling can offset but politically uncertain. Fertility drag assumes partial but incomplete recycling to families.'
+          notes: 'With revenue recycling (carbon dividend or tax cuts), GDP impact is small. Regressive burden affects fertility regardless. Model assumes partial recycling.'
         }
       },
-      { 
-        id: 'vat', 
-        name: 'Federal VAT', 
-        description: 'Consumption tax with exemptions for necessities.', 
-        savingsLow: 400, savingsHigh: 600, 
+      {
+        id: 'vat',
+        name: 'Federal VAT',
+        description: 'Consumption tax with exemptions for necessities.',
+        savingsLow: 400, savingsHigh: 600,
         enabled: false,
         threshold: 10, // 10% rate default
         thresholdMin: 5,
         thresholdMax: 20,
         thresholdLabel: 'VAT rate (%)',
-        gdpDrag: 0.001, // Minimal GDP drag - least distortionary
+        // NEW: Minimal level effect (least distortionary); no growth effect
+        // At 10%: level = -0.1%, growth = 0
+        gdpLevelEffect: -0.001, // -0.1% one-time GDP level shift at 10%
+        gdpGrowthEffect: 0, // No growth effect (consumption taxes least distortionary)
         tfrDrag: 0.02, // Modest TFR impact with exemptions
-        dragRationale: 'Consumption reduction; regressive before exemptions',
+        dragRationale: 'VAT is least distortionary broad-based tax; minimal level effect, no growth effect',
         confidence: 'medium-high',
         methodology: {
-          derivation: 'GDP drag minimal—VAT is least distortionary broad-based tax. TFR drag from reduced consumption capacity, partially offset by exemptions for necessities.',
+          derivation: 'Level effect: ~0.01% per 1% rate (VAT is least distortionary). Growth effect: none—consumption taxes don\'t affect innovation or productivity incentives. TFR drag from reduced consumption capacity.',
           sources: [
             { cite: 'Mankiw et al. (2009)', finding: 'Optimal tax theory favors consumption taxes', elasticity: 'Lower deadweight loss' },
             { cite: 'OECD (2020)', finding: 'VAT revenue potential in US', elasticity: '~$50B per 1% rate' },
@@ -603,22 +621,24 @@ const liberalPolicies = [
           notes: 'Exemptions for food, housing, healthcare, and childcare reduce regressivity and fertility drag. US is only OECD country without national VAT.'
         }
       },
-      { 
-        id: 'stepped-up-basis', 
-        name: 'End Stepped-Up Basis', 
-        description: 'Tax capital gains at death instead of resetting basis.', 
-        savingsLow: 45, savingsHigh: 57, 
+      {
+        id: 'stepped-up-basis',
+        name: 'End Stepped-Up Basis',
+        description: 'Tax capital gains at death instead of resetting basis.',
+        savingsLow: 45, savingsHigh: 57,
         enabled: false,
         threshold: 1000, // $1M exemption default (per person)
         thresholdMin: 0,
         thresholdMax: 5000,
         thresholdLabel: 'Exemption per person ($k)',
-        gdpDrag: -0.001, // Slight GDP INCREASE (lock-in reduction)
+        // NEW: POSITIVE GDP effect (reduces lock-in distortion)
+        gdpLevelEffect: 0.0005, // +0.05% one-time GDP level shift (efficiency gain)
+        gdpGrowthEffect: 0, // No growth effect
         tfrDrag: 0.001, // Minimal TFR impact - affects elderly estates
-        dragRationale: 'Neutral to positive GDP: reduces lock-in distortion, improves capital allocation',
+        dragRationale: 'Positive GDP: reduces lock-in distortion, improves capital allocation efficiency',
         confidence: 'medium-high',
         methodology: {
-          derivation: 'When someone dies holding appreciated assets, cost basis "steps up" to market value—the "Angel of Death" loophole. Eliminating this raises $50-57B/yr (tax at death) or $20-25B/yr (carryover basis). GDP effect neutral to positive: lock-in reduction improves capital allocation. TFR impact minimal—affects estates at death, not young families.',
+          derivation: 'Level effect: +0.05% GDP gain from reduced lock-in improving capital allocation (Gale et al. 2024). No growth effect. TFR impact minimal—affects estates at death, not young families. "Angel of Death" loophole elimination raises revenue efficiently.',
           sources: [
             { cite: 'CBO (2024)', finding: 'Tax at death = ~$536B/decade; carryover = ~$200B/decade', elasticity: 'Well-established scoring' },
             { cite: 'Gale, Hall & Sabelhaus (2024)', finding: 'Brookings: "Would make the economy more efficient"', elasticity: 'Positive efficiency' },
@@ -628,47 +648,53 @@ const liberalPolicies = [
           notes: 'Implementation straightforward. 56% of benefit goes to top quintile, 18% to top 1%. Main concern: liquidity for illiquid estates (farms, businesses). Biden proposal exempted $1M/person + primary residence.'
         }
       },
-      { 
-        id: 'land-value-tax', 
-        name: 'Land Value Tax', 
-        description: 'Tax unimproved land value. Economists\' "ideal tax."', 
-        savingsLow: 300, savingsHigh: 500, 
+      {
+        id: 'land-value-tax',
+        name: 'Land Value Tax',
+        description: 'Tax unimproved land value. Economists\' "ideal tax."',
+        savingsLow: 300, savingsHigh: 500,
         enabled: false,
         threshold: 100, // 1.0% rate default (stored as basis points)
         thresholdMin: 25,
         thresholdMax: 200,
         thresholdLabel: 'Annual rate (basis points)',
-        gdpDrag: 0.0005, // Small drag at 1% rate (transition costs offset efficiency gains)
+        // NEW: POSITIVE GDP effects! Reduces speculation, improves allocation
+        // At 1%: level = +0.1%, growth = +0.01%/yr
+        gdpLevelEffect: 0.001, // +0.1% one-time GDP level shift (reduced speculation)
+        gdpGrowthEffect: 0.0001, // +0.01% annual growth gain (better land allocation)
         tfrDrag: -0.003, // Slight TFR BENEFIT (lower housing costs)
-        dragRationale: 'Low rates: GDP gain from reduced speculation. High rates: transition costs (wealth shock, liquidity) create modest drag.',
+        dragRationale: 'POSITIVE GDP: reduces land speculation, improves capital allocation. Milton Friedman\'s "least bad tax."',
         confidence: 'low-medium',
         methodology: {
-          derivation: 'Land is fixed in supply—taxing it causes minimal deadweight loss. Milton Friedman called it "the least bad tax." At LOW rates (<0.5%), reduced speculation may increase GDP. At HIGH rates (>1.5%), transition effects dominate: wealth shock to landowners reduces consumption, liquidity constraints force asset sales. Net effect at 1%: roughly neutral. TFR slightly positive: lower land prices help young families afford housing.',
+          derivation: 'Level effect: +0.1% GDP gain at 1% rate from reduced speculation and improved land allocation (Stiglitz 2025). Growth effect: +0.01%/yr from continuous efficiency gains. TFR positive: lower land prices help young families afford housing. Land is fixed in supply—taxing it causes minimal deadweight loss.',
           sources: [
             { cite: 'Stiglitz (1977)', finding: 'Henry George Theorem: LVT can fund public goods optimally', elasticity: 'Theoretically non-distortionary' },
             { cite: 'Stiglitz (2025)', finding: 'LVT reduces speculation, can increase growth at moderate rates', elasticity: 'Positive at low rates' },
             { cite: 'Oates & Schwab (1997)', finding: 'Pittsburgh two-rate tax increased building activity', elasticity: 'Empirical support' },
             { cite: 'IMF (2022)', finding: '"Land value taxation... can even be productive"', elasticity: 'But notes transition costs' }
           ],
-          notes: 'GDP EFFECT IS RATE-DEPENDENT: 0.25% → slight gain; 1% → ~neutral; 2% → modest drag. Even at high rates, drag is ~1/3 of equivalent income tax. HIGH UNCERTAINTY: ±50% on revenue. Implementation challenges: valuation, political resistance, liquidity, constitutional questions.'
+          notes: 'GDP EFFECT IS POSITIVE: reduces speculation, improves land allocation. At very high rates (>2%), transition costs may dominate. HIGH UNCERTAINTY: ±50% on revenue. Implementation challenges: valuation, political resistance, liquidity.'
         }
       },
-      { 
-        id: 'income-tax-all', 
-        name: 'Income Tax Increase (All Brackets)', 
-        description: 'Raise rates across all 7 income brackets.', 
-        savingsLow: 100, savingsHigh: 130, 
+      {
+        id: 'income-tax-all',
+        name: 'Income Tax Increase (All Brackets)',
+        description: 'Raise rates across all 7 income brackets.',
+        savingsLow: 100, savingsHigh: 130,
         enabled: false,
         threshold: 1, // 1 percentage point default
         thresholdMin: 1,
         thresholdMax: 5,
         thresholdLabel: 'Rate increase (pp)',
-        gdpDrag: 0.0006, // 0.06% GDP per pp
+        // NEW: Level effect from labor supply; tiny growth effect
+        // Per 1pp: level = -0.06%, growth = -0.002%/yr
+        gdpLevelEffect: -0.0006, // -0.06% one-time GDP level shift per pp
+        gdpGrowthEffect: -0.00002, // -0.002% annual growth drag per pp
         tfrDrag: 0.009, // Higher TFR drag - hits family-formation ages
-        dragRationale: 'Labor supply reduction; hits middle class where most childbearing occurs',
+        dragRationale: 'Labor supply reduction (level effect); minor productivity impact (growth effect)',
         confidence: 'high',
         methodology: {
-          derivation: '+1pp across all brackets raises ~$110-120B/yr. GDP drag ~0.06% per pp from labor supply response (ETI ~0.25). TFR drag higher than top-bracket-only: broad increase reduces disposable income for middle-income families where most childbearing occurs.',
+          derivation: 'Level effect: ~0.06% per pp from labor supply response (ETI ~0.25). Growth effect: ~0.002%/yr per pp from reduced work incentives affecting skill accumulation. TFR drag: broad increase reduces disposable income for middle-income families.',
           sources: [
             { cite: 'CBO (2024)', finding: '+1pp all brackets = $1.1-1.2T/decade', elasticity: 'Official scoring' },
             { cite: 'Saez, Slemrod & Giertz (2012)', finding: 'Elasticity of taxable income meta-analysis', elasticity: 'ETI ~0.25' },
@@ -1175,7 +1201,32 @@ const liberalPolicies = [
       return taxIncreases.filter(t => t.enabled && t.tfrDrag).reduce((sum, t) => sum + t.tfrDrag, 0);
     }
 
-    // GDP drag from tax policies (in annual GDP growth points)
+    // NEW: Calculate GDP level effect (one-time shift, doesn't compound)
+    function calculateGdpLevelEffect() {
+      return taxIncreases.filter(t => t.enabled && t.gdpLevelEffect !== undefined)
+        .reduce((sum, t) => sum + t.gdpLevelEffect, 0);
+    }
+
+    // NEW: Calculate GDP growth effect (compounds annually, should be small)
+    function calculateGdpGrowthEffect() {
+      return taxIncreases.filter(t => t.enabled && t.gdpGrowthEffect !== undefined)
+        .reduce((sum, t) => sum + t.gdpGrowthEffect, 0);
+    }
+
+    // NEW: Calculate fiscal sustainability offset
+    // Tax revenue that reduces the deficit provides partial GDP benefit
+    // Literature: ~0.1-0.2% GDP gain per 1% of GDP deficit reduction
+    function calculateFiscalSustainabilityOffset(gdpBaseline) {
+      const totalTaxRevenue = taxIncreases.filter(t => t.enabled)
+        .reduce((sum, t) => sum + (t.savingsLow + t.savingsHigh) / 2, 0);
+      // Convert to share of GDP (revenue in $B, GDP in $T)
+      const revenueAsShareOfGdp = totalTaxRevenue / (gdpBaseline * 1000);
+      // 0.15 = midpoint of 0.1-0.2 benefit per 1% deficit reduction
+      return revenueAsShareOfGdp * 0.15;
+    }
+
+    // LEGACY: GDP drag from tax policies (kept for backward compatibility during transition)
+    // This sums the old gdpDrag values if they exist, otherwise returns 0
     function calculateGdpDrag() {
       return taxIncreases.filter(t => t.enabled && t.gdpDrag).reduce((sum, t) => sum + t.gdpDrag, 0);
     }
@@ -1188,31 +1239,44 @@ const liberalPolicies = [
       const currentGDP = 28; // $28T
       const years = 50; // 2025 to 2075
       const baselineGrowth = 0.02; // 2% real growth
-      
-      // Tax policy drag on annual growth
-      const taxDragOnGrowth = gdpDrag;
-      
+
+      // === NEW GDP MODEL: Separate Level and Growth Effects ===
+      // Level effects: One-time GDP shift that does NOT compound (capital stock adjustment)
+      // Growth effects: Small annual drag on growth rate (innovation/productivity channels)
+      // Fiscal offset: Revenue that reduces deficit provides partial GDP benefit
+
+      // Calculate tax policy effects using new model
+      const taxLevelEffect = calculateGdpLevelEffect();
+      const taxGrowthEffect = calculateGdpGrowthEffect();
+      const fiscalOffset = calculateFiscalSustainabilityOffset(currentGDP);
+
+      // Combined tax GDP effect (for display purposes)
+      // Level effect + cumulative growth effect over 50 years + fiscal offset
+      const growthCumulative = Math.pow(1 + taxGrowthEffect, years) - 1;
+      let netTaxEffect = taxLevelEffect + growthCumulative + fiscalOffset;
+
+      // Cap at reasonable bounds: ±10% max cumulative effect from tax policy
+      netTaxEffect = Math.max(-0.10, Math.min(0.10, netTaxEffect));
+
       // Entitlement reform boost on annual growth
       const entitlementBoost = (entitlementSavings / 100) * 0.0003;
-      
+
       // Deficit drag on growth (crowding out effect)
       const netDeficit = deficit - offsets;
       const deficitDrag = Math.max(0, netDeficit / 100) * 0.0002;
-      
+
       // USE NEW INFLATION MODEL FOR GDP DRAG
       const inflationDynamics = calculateInflationDynamics(deficit, offsets);
-      
+
       // CRITICAL FIX: Use ACTUAL CPI for growth drag, not "above target"
       // High inflation hurts growth regardless of what the Fed's target is
       // Historical: Fischer (1993), Barro (1995), Bruno & Easterly (1998)
-      //
-      // Also: STEEPER elasticities, especially at higher levels
       const totalCPI = inflationDynamics.totalCPI;
-      
+
       let inflationGrowthDrag = 0;
       if (totalCPI > 2) {  // Only drag above 2% (normal inflation)
         const excessCPI = totalCPI - 2;
-        
+
         // STEEPER tiered drag
         if (excessCPI <= 2) {
           // 2-4% CPI: mild drag (0.05% per pp)
@@ -1231,11 +1295,11 @@ const liberalPolicies = [
           inflationGrowthDrag = 2 * 0.0005 + 2 * 0.0015 + 2 * 0.0025 + 4 * 0.004 + (excessCPI - 10) * 0.006;
         }
       }
-      
+
       // Population growth effect on GDP
       const tfrDelta = tfr - 1.62;
       const populationGrowthBoost = tfrDelta * 0.005;
-      
+
       // FISCAL DOMINANCE GROWTH PENALTY
       // In dominance: additional drag from capital flight, uncertainty, institutional decay
       let dominanceGrowthDrag = 0;
@@ -1247,7 +1311,7 @@ const liberalPolicies = [
       } else if (inflationDynamics.fiscalRegime === 'stressed') {
         dominanceGrowthDrag = 0.003;
       }
-      
+
       // Store for display
       window.lastGDPCalc = {
         totalCPI: totalCPI,
@@ -1255,20 +1319,35 @@ const liberalPolicies = [
         dominanceGrowthDrag: dominanceGrowthDrag,
         fiscalRegime: inflationDynamics.fiscalRegime,
         deficitPctGDP: inflationDynamics.deficitPctGDP,
-        cbAbsorptionRate: inflationDynamics.cbAbsorptionRate
+        cbAbsorptionRate: inflationDynamics.cbAbsorptionRate,
+        // NEW: Store tax effect breakdown for display
+        taxLevelEffect: taxLevelEffect,
+        taxGrowthEffect: taxGrowthEffect,
+        fiscalOffset: fiscalOffset,
+        netTaxEffect: netTaxEffect
       };
-      
+
       // Immigration GDP effect
       const immigrationImpacts = calculateImmigrationImpacts();
       // Convert total % effect to annual rate over 50 years
       // e.g., 20% total effect = ~0.36% per year compounded
       const immigrationGDPBoost = Math.pow(1 + immigrationImpacts.gdpEffect / 100, 1/50) - 1;
-      
+
       // Phased effects
       let gdp = currentGDP;
+
+      // === APPLY LEVEL EFFECT AS ONE-TIME SHIFT (phases in over 10 years) ===
+      // Level effect applied to initial GDP, not compounded annually
+      // This represents the one-time capital stock / equilibrium adjustment
+
       for (let year = 1; year <= years; year++) {
-        let annualGrowth = baselineGrowth - taxDragOnGrowth + entitlementBoost - deficitDrag;
-        
+        // Base growth rate (no more taxDragOnGrowth - that was the bug!)
+        let annualGrowth = baselineGrowth + entitlementBoost - deficitDrag;
+
+        // Add SMALL growth effect from tax policy (this is the new, correct approach)
+        // Growth effect compounds but should be very small (~0.01-0.02%/yr)
+        annualGrowth += taxGrowthEffect;
+
         // Inflation drag phases in over first 10 years
         if (year <= 10) {
           const phaseIn = year / 10;
@@ -1276,7 +1355,7 @@ const liberalPolicies = [
         } else {
           annualGrowth -= inflationGrowthDrag;
         }
-        
+
         // Fiscal dominance drag phases in over first 5 years
         if (dominanceGrowthDrag > 0) {
           if (year <= 5) {
@@ -1286,13 +1365,13 @@ const liberalPolicies = [
             annualGrowth -= dominanceGrowthDrag;
           }
         }
-        
+
         // Population effect phases in after year 20
         if (year > 20) {
           const phaseIn = Math.min(1, (year - 20) / 10);
           annualGrowth += populationGrowthBoost * phaseIn;
         }
-        
+
         // Immigration GDP effect phases in over 30 years
         if (year <= 30) {
           const phaseIn = year / 30;
@@ -1300,10 +1379,16 @@ const liberalPolicies = [
         } else {
           annualGrowth += immigrationGDPBoost;
         }
-        
+
         gdp *= (1 + annualGrowth);
       }
-      
+
+      // === APPLY LEVEL EFFECT + FISCAL OFFSET AS ONE-TIME ADJUSTMENT ===
+      // Level effect is a one-time shift to a new equilibrium, not a compounding drag
+      // Fiscal offset is the GDP benefit from deficit reduction
+      const levelAdjustment = taxLevelEffect + fiscalOffset;
+      gdp *= (1 + levelAdjustment);
+
       return gdp;
     }
 
@@ -1427,7 +1512,19 @@ const liberalPolicies = [
       netHigh -= inflationPenalty;
 
       const tfrDrag = calculateTfrDrag();
+      // NEW: Use separate level and growth effects instead of single gdpDrag
+      const gdpLevelEffect = calculateGdpLevelEffect();
+      const gdpGrowthEffect = calculateGdpGrowthEffect();
+      const fiscalOffset = calculateFiscalSustainabilityOffset(28); // $28T baseline GDP
+      // Calculate net GDP effect for display (level + 50yr growth compound + fiscal offset)
+      const growthCumulative = Math.pow(1 + gdpGrowthEffect, 50) - 1;
+      let netGdpEffect = gdpLevelEffect + growthCumulative + fiscalOffset;
+      // Cap at ±10%
+      netGdpEffect = Math.max(-0.10, Math.min(0.10, netGdpEffect));
+
+      // Legacy gdpDrag for backward compatibility (kept but no longer drives GDP calculation)
       const gdpDrag = calculateGdpDrag();
+
       netLow -= tfrDrag;
       netHigh -= tfrDrag;
 
@@ -1437,13 +1534,18 @@ const liberalPolicies = [
       netLow += immigrationTFR;
       netHigh += immigrationTFR;
 
-      return { 
-        low: baseTFR + netLow, 
-        mid: baseTFR + (netLow + netHigh) / 2, 
-        high: baseTFR + netHigh, 
-        inflationPenalty, 
-        tfrDrag, 
-        gdpDrag,
+      return {
+        low: baseTFR + netLow,
+        mid: baseTFR + (netLow + netHigh) / 2,
+        high: baseTFR + netHigh,
+        inflationPenalty,
+        tfrDrag,
+        gdpDrag, // Legacy, kept for backward compatibility
+        // NEW: GDP effect breakdown
+        gdpLevelEffect,
+        gdpGrowthEffect,
+        fiscalOffset,
+        netGdpEffect, // Total capped GDP effect
         immigrationTFR,
         deficit: fiscal.net,  // Net deficit for display
         spending: fiscal.spending,
@@ -2530,17 +2632,29 @@ const liberalPolicies = [
                        tax.id === 'land-value-tax' ? -0.004 : // POSITIVE for TFR
                        tax.id === 'income-tax-all' ? 0.009 : 0.01;
 
-      // Base GDP drags (at default threshold)
-      const baseGdpDrag = tax.id === 'income-tax-top' ? 0.002 :
-                       tax.id === 'corporate-tax' ? 0.01 :
-                       tax.id === 'capital-gains' ? 0.003 :
-                       tax.id === 'financial-transaction' ? 0.002 :
-                       tax.id === 'estate-tax' ? 0.001 :
-                       tax.id === 'carbon-tax' ? 0.005 :
-                       tax.id === 'vat' ? 0.001 :
-                       tax.id === 'stepped-up-basis' ? -0.001 : // POSITIVE for GDP
-                       tax.id === 'land-value-tax' ? 0.002 : // Rate-dependent: negative at low, positive at high
-                       tax.id === 'income-tax-all' ? 0.0006 : 0.001;
+      // NEW: Base GDP level effects (one-time shift, at default threshold)
+      const baseLevelEffect = tax.id === 'income-tax-top' ? -0.0004 :      // -0.04%
+                              tax.id === 'corporate-tax' ? -0.0035 :       // -0.35% (7pp × 0.05%)
+                              tax.id === 'capital-gains' ? -0.002 :        // -0.2%
+                              tax.id === 'financial-transaction' ? -0.0005 : // -0.05%
+                              tax.id === 'estate-tax' ? -0.0001 :          // -0.01%
+                              tax.id === 'carbon-tax' ? -0.0004 :          // -0.04% (with recycling)
+                              tax.id === 'vat' ? -0.001 :                  // -0.1%
+                              tax.id === 'stepped-up-basis' ? 0.0005 :     // +0.05% (positive!)
+                              tax.id === 'land-value-tax' ? 0.001 :        // +0.1% (positive!)
+                              tax.id === 'income-tax-all' ? -0.0006 : -0.0005; // -0.06%
+
+      // NEW: Base GDP growth effects (annual, compounds, at default threshold)
+      const baseGrowthEffect = tax.id === 'income-tax-top' ? -0.00003 :     // -0.003%/yr
+                               tax.id === 'corporate-tax' ? -0.00021 :      // -0.021%/yr (7pp × 0.003%)
+                               tax.id === 'capital-gains' ? -0.00015 :      // -0.015%/yr
+                               tax.id === 'financial-transaction' ? -0.00005 : // -0.005%/yr
+                               tax.id === 'estate-tax' ? 0 :                // no growth effect
+                               tax.id === 'carbon-tax' ? 0 :                // no growth effect (with recycling)
+                               tax.id === 'vat' ? 0 :                       // no growth effect
+                               tax.id === 'stepped-up-basis' ? 0 :          // no growth effect
+                               tax.id === 'land-value-tax' ? 0.0001 :       // +0.01%/yr (positive!)
+                               tax.id === 'income-tax-all' ? -0.00002 : 0;  // -0.002%/yr
 
       // Calculate multiplier based on threshold vs default
       let multiplier = 1;
@@ -2594,13 +2708,9 @@ const liberalPolicies = [
         const ratePercent = tax.threshold / 100;
         const behavioralFactor = 1 - 0.05 * ratePercent; // slight base erosion at high rates
         multiplier = ratePercent * behavioralFactor;
-        // GDP drag is rate-dependent: low rates = slight benefit, high rates = modest drag
-        // baseGdpDrag = 0.002, multiplied by (rate - 0.4)
-        // At 0.25%: 0.002 * -0.15 = -0.0003 (GDP gain)
-        // At 0.5%:  0.002 * 0.1  = +0.0002 (tiny drag)  
-        // At 1%:    0.002 * 0.6  = +0.0012 (small drag)
-        // At 2%:    0.002 * 1.6  = +0.0032 (modest drag)
-        dragMultiplier = ratePercent - 0.4;
+        // NEW: LVT has POSITIVE GDP effects that scale with rate
+        // At 0.25%: smaller gain; at 1%: full gain; at 2%: even larger gain
+        dragMultiplier = ratePercent;
       } else if (tax.id === 'income-tax-all') {
         // Higher pp increase = more revenue and more drag
         // 1pp is base
@@ -2618,7 +2728,9 @@ const liberalPolicies = [
       tax.savingsLow = Math.round(baseRevenueLow * multiplier);
       tax.savingsHigh = Math.round(baseRevenueHigh * multiplier);
       tax.tfrDrag = baseTfrDrag * dragMultiplier;
-      tax.gdpDrag = baseGdpDrag * dragMultiplier;
+      // NEW: Set level and growth effects based on threshold
+      tax.gdpLevelEffect = baseLevelEffect * dragMultiplier;
+      tax.gdpGrowthEffect = baseGrowthEffect * dragMultiplier;
 
       // Update the displayed stats
       if (costStat) costStat.textContent = `$${Math.round((tax.savingsLow + tax.savingsHigh) / 2)}B/yr`;
@@ -4038,15 +4150,22 @@ const liberalPolicies = [
         factors.push({ label: 'Pro-family framing', impact: +5, class: 'positive' });
       }
       
-      // GDP DRAG PENALTY - voters punish economic damage
-      // Calculate total GDP impact (drag from policies + taxes)
-      const gdpDragPct = tfr.gdpDrag || 0; // This is percentage points of GDP drag
-      if (gdpDragPct > 0.5) {
+      // GDP IMPACT PENALTY/BONUS - voters punish economic damage, reward growth
+      // Use new netGdpEffect which is total cumulative GDP impact (not annual rate)
+      const gdpEffect = tfr.netGdpEffect || 0; // Total GDP effect (e.g., -0.015 = -1.5%)
+      const gdpEffectPct = Math.abs(gdpEffect * 100); // Convert to percentage points
+
+      if (gdpEffect < -0.02) { // More than 2% GDP loss
         // Significant GDP drag - politically toxic
-        const gdpPenalty = Math.min(20, Math.round((gdpDragPct - 0.5) * 15));
+        const gdpPenalty = Math.min(15, Math.round((gdpEffectPct - 2) * 3));
         score -= gdpPenalty;
-        const severity = gdpDragPct > 2 ? ' (economy crasher)' : gdpDragPct > 1 ? ' (significant)' : '';
-        factors.push({ label: `GDP drag ${gdpDragPct.toFixed(1)}%${severity}`, impact: -gdpPenalty, class: 'negative' });
+        const severity = gdpEffectPct > 5 ? ' (severe)' : gdpEffectPct > 3 ? ' (significant)' : '';
+        factors.push({ label: `GDP impact −${gdpEffectPct.toFixed(1)}%${severity}`, impact: -gdpPenalty, class: 'negative' });
+      } else if (gdpEffect > 0.005) { // More than 0.5% GDP gain
+        // Positive GDP effect - politically helpful
+        const gdpBonus = Math.min(5, Math.round(gdpEffectPct * 2));
+        score += gdpBonus;
+        factors.push({ label: `GDP boost +${gdpEffectPct.toFixed(1)}%`, impact: +gdpBonus, class: 'positive' });
       }
       
       // ===========================================
