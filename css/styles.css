@@ -905,8 +905,28 @@
       bottom: 20px;
       left: 20px;
       display: flex;
+      flex-wrap: wrap;
       gap: 8px;
       z-index: 100;
+      max-width: 200px;
+    }
+
+    .floating-credit {
+      width: 100%;
+      font-size: 10px;
+      color: #90a4ae;
+      font-style: italic;
+      margin-top: 2px;
+    }
+
+    .floating-credit a {
+      color: #78909c;
+      text-decoration: none;
+    }
+
+    .floating-credit a:hover {
+      color: var(--accent);
+      text-decoration: underline;
     }
 
     .floating-btn {
@@ -2412,30 +2432,3 @@
       }
     }
 
-    /* Creator Credit Footer */
-    .creator-credit {
-      text-align: center;
-      padding: 16px;
-      font-size: 12px;
-      color: #78909c;
-      background: var(--paper);
-      border-top: 1px solid #e0e0e0;
-    }
-
-    .creator-credit a {
-      color: #546e7a;
-      text-decoration: none;
-      transition: color 0.2s ease;
-    }
-
-    .creator-credit a:hover {
-      color: var(--accent);
-      text-decoration: underline;
-    }
-
-    /* Mobile footer spacing to avoid floating button overlap */
-    @media (max-width: 768px) {
-      .creator-credit {
-        padding-bottom: 70px;
-      }
-    }
