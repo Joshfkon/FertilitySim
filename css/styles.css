@@ -2400,4 +2400,9 @@
       text-decoration: underline;
     }
 
-
+    /* Mobile footer spacing to avoid floating button overlap */
+    @media (max-width: 768px) {
+      .creator-credit {
+        padding-bottom: 70px;
+      }
+    }
